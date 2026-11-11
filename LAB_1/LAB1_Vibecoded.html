@@ -1,0 +1,2629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FinTrack - a personal wealth journal. Spending, investments and a compound-interest calculator, told as a story (demo data).">
+    <title>FinTrack - A Personal Wealth Journal</title>
+
+    <style>
+        /* =====================================================
+           1. DESIGN TOKENS
+           Identity: an independent financial magazine.
+           Warm paper, navy ink, one teal for "growth",
+           one vermilion for "spending".
+        ===================================================== */
+        :root {
+            --paper: #efe8d8;
+            --paper-2: #e5dcc6;
+            --white: #fffdf7;
+            --ink: #0f1b2d;
+            --navy: #16304f;
+            --teal: #1f8a70;
+            --teal-dark: #146450;
+            --red: #c23a1c;
+            --mustard: #d9a21b;
+            --muted: #55606e;
+
+            --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+            --sans: "Helvetica Neue", Arial, system-ui, sans-serif;
+            --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+            --gutter: clamp(1rem, 4vw, 3rem);
+            --section-space: clamp(4rem, 10vw, 9rem);
+        }
+
+        /* =====================================================
+           2. BASE
+        ===================================================== */
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 4rem;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--sans);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: var(--ink);
+            background-color: var(--paper);
+            /* faint ledger lines, like accounting paper */
+            background-image: linear-gradient(rgba(15, 27, 45, 0.045) 1px, transparent 1px);
+            background-size: 100% 2.2rem;
+        }
+
+        ::selection {
+            background: var(--teal);
+            color: var(--white);
+        }
+
+        h1, h2, h3, p, ul, ol, dl, dd, figure {
+            margin: 0;
+        }
+
+        ul, ol {
+            padding: 0;
+            list-style: none;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        a:focus-visible,
+        button:focus-visible,
+        input:focus-visible,
+        select:focus-visible {
+            outline: 3px solid var(--red);
+            outline-offset: 3px;
+        }
+
+        .wrap {
+            max-width: 1400px;
+            margin-inline: auto;
+            padding-inline: var(--gutter);
+        }
+
+        .skip-link {
+            position: absolute;
+            left: -999px;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 0.6rem 1rem;
+            z-index: 100;
+        }
+
+        .skip-link:focus {
+            left: 0.5rem;
+            top: 0.5rem;
+        }
+
+        /* small uppercase "label" text used all over the page */
+        .eyebrow {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        em {
+            font-style: italic;
+        }
+
+        /* =====================================================
+           3. TOP BAR + NAVIGATION
+        ===================================================== */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.6rem var(--gutter);
+            background-color: var(--paper);
+            border-bottom: 1px solid var(--ink);
+        }
+
+        .brand {
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: 1.4rem;
+            letter-spacing: -0.03em;
+            text-decoration: none;
+        }
+
+        .brand sup {
+            font-size: 0.5em;
+            color: var(--red);
+        }
+
+        .topbar nav {
+            overflow-x: auto;
+        }
+
+        .topbar ul {
+            display: flex;
+            gap: 0.25rem 1.5rem;
+        }
+
+        .topbar a.nav-link {
+            display: block;
+            white-space: nowrap;
+            text-decoration: none;
+            padding: 0.25rem 0;
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            background: linear-gradient(var(--red), var(--red)) left bottom / 0% 2px no-repeat;
+            transition: background-size 0.3s, color 0.3s;
+        }
+
+        .topbar a.nav-link span {
+            color: var(--red);
+            margin-right: 0.35em;
+        }
+
+        .topbar a.nav-link:hover {
+            background-size: 100% 2px;
+        }
+
+        /* =====================================================
+           4. HERO
+        ===================================================== */
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding-top: clamp(1.5rem, 4vw, 3rem);
+            padding-bottom: clamp(3rem, 8vw, 6rem);
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 0.4rem 2rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--ink);
+        }
+
+        /* ---------- The FINTRACK wordmark (used in the hero and the footer) ----------
+           Sizing rule: the wrapper is a "container", and the word's font-size is a
+           percentage of that container's width (cqi). So the word always scales with
+           the space it lives in, instead of guessing from the window width.
+           16cqi leaves room for even the widest bold serif fonts, so the word
+           can never run past the edge and nothing has to be cropped. */
+        .wordmark-box {
+            container-type: inline-size;
+        }
+
+        .wordmark {
+            display: block;
+            margin: 0;
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: min(16vw, 14rem);               /* fallback for old browsers */
+            font-size: clamp(3rem, 16cqi, 24rem);
+            line-height: 0.8;                          /* caps only, so tight is safe */
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .wm-fin {
+            color: var(--ink);
+        }
+
+        .wm-track {
+            color: var(--teal-dark);
+        }
+
+        .wm-reg {
+            margin-left: 0.15em;
+            font-size: 0.16em;
+            font-weight: 400;
+            letter-spacing: 0;
+            line-height: 1;
+            vertical-align: top;
+            color: var(--red);
+        }
+
+        /* In the hero the word sits on a heavy rule, like a masthead */
+        .hero .wordmark-box {
+            margin-top: clamp(1rem, 3vw, 2.25rem);
+            padding-bottom: clamp(0.5rem, 1.2vw, 0.9rem);
+            border-bottom: 3px solid var(--ink);
+        }
+
+        /* The old headline now works as the tagline under the masthead */
+        .hero-story {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+            align-items: center;
+            margin-top: clamp(1.5rem, 4vw, 3.5rem);
+            padding-bottom: 1.6rem;                    /* room for the sticker under the coin */
+        }
+
+        .hero-tagline {
+            grid-column: 1 / span 8;
+            margin: 0;
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: clamp(2.6rem, 7.5vw, 6.5rem);
+            line-height: 0.92;
+            letter-spacing: -0.04em;
+        }
+
+        .hero-tagline .line {
+            display: block;
+        }
+
+        /* the middle line is pushed right: deliberate asymmetry */
+        .hero-tagline .line-2 {
+            padding-left: clamp(1rem, 10vw, 10rem);
+        }
+
+        .hero-tagline em {
+            font-weight: 400;
+            color: var(--red);
+        }
+
+        .hero-tagline .squiggle {
+            display: inline-block;
+            padding-bottom: 0.08em;
+            background: repeating-linear-gradient(135deg, var(--red) 0 3px, transparent 3px 7px) left bottom / 100% 0.06em no-repeat;
+        }
+
+        /* The coin now has its own grid cell, so it can never sit on top of text */
+        .coin {
+            position: relative;
+            grid-column: 9 / span 4;
+            justify-self: end;
+            width: clamp(150px, 26vw, 360px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background:
+                repeating-radial-gradient(circle, transparent 0 14px, rgba(15, 27, 45, 0.18) 14px 15px),
+                var(--teal);
+            color: var(--paper);
+            font-family: var(--serif);
+            font-size: clamp(4.5rem, 11vw, 9.5rem);
+            line-height: 1;
+        }
+
+        .coin::after {
+            content: "";
+            position: absolute;
+            inset: -14px;
+            border: 2px dashed var(--ink);
+            border-radius: 50%;
+            animation: spin 40s linear infinite;
+        }
+
+        /* The sticker is a child of the coin, anchored to its lower edge */
+        .sticker {
+            position: absolute;
+            z-index: 3;
+            right: 8%;
+            bottom: -1.4rem;
+            padding: 0.6rem 1rem;
+            color: var(--ink);
+            line-height: 1.35;
+            white-space: nowrap;
+            background: var(--mustard);
+            border: 2px solid var(--ink);
+            border-radius: 999px;
+            transform: rotate(-9deg);
+            transition: transform 0.3s;
+            font-family: var(--mono);
+            font-size: clamp(0.65rem, 1.4vw, 0.85rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            text-align: center;
+        }
+
+        .sticker:hover {
+            transform: rotate(3deg) scale(1.08);
+        }
+
+        .hero-lower {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 1.5rem;
+            margin-top: clamp(1.5rem, 4vw, 3rem);
+            align-items: end;
+        }
+
+        .scroll-cue {
+            grid-column: 1 / span 4;
+        }
+
+        .scroll-cue span {
+            display: inline-block;
+            animation: bob 1.8s ease-in-out infinite;
+        }
+
+        .intro {
+            grid-column: 6 / span 7;
+            max-width: 36rem;
+            font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+        }
+
+        /* scrolling strip of words */
+        .marquee {
+            overflow: hidden;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 0.9rem 0;
+            border-block: 1px solid var(--ink);
+        }
+
+        .marquee-track {
+            display: flex;
+            width: max-content;
+            animation: scroll-left 30s linear infinite;
+        }
+
+        .marquee:hover .marquee-track {
+            animation-play-state: paused;
+        }
+
+        .marquee-group {
+            display: flex;
+            flex-shrink: 0;
+        }
+
+        .marquee-group span {
+            padding-inline: 1.2rem;
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: clamp(1.4rem, 3vw, 2.4rem);
+            white-space: nowrap;
+        }
+
+        .marquee-group span:nth-child(even) {
+            color: var(--mustard);
+            font-style: normal;
+        }
+
+        /* =====================================================
+           5. CHAPTER LAYOUT (shared by sections 01 - 03)
+        ===================================================== */
+        .chapter {
+            padding-block: var(--section-space);
+        }
+
+        .chapter-head {
+            position: relative;
+            margin-bottom: clamp(2rem, 6vw, 5rem);
+        }
+
+        /* giant outlined number sits behind the heading */
+        .chapter-num {
+            position: absolute;
+            right: 0;
+            top: -0.35em;
+            z-index: 0;
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: clamp(7rem, 24vw, 20rem);
+            line-height: 1;
+            color: transparent;
+            -webkit-text-stroke: 1.5px var(--ink);
+            opacity: 0.35;
+            user-select: none;
+        }
+
+        .chapter-head .eyebrow {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 0.75rem;
+            color: var(--red);
+        }
+
+        .chapter-head h2 {
+            position: relative;
+            z-index: 1;
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: clamp(3rem, 9vw, 8rem);
+            line-height: 0.92;
+            letter-spacing: -0.04em;
+        }
+
+        .chapter-head h2 em {
+            font-weight: 400;
+            color: var(--teal-dark);
+        }
+
+        .chapter-head .lede {
+            position: relative;
+            z-index: 1;
+            max-width: 30rem;
+            margin-top: 1.25rem;
+            margin-left: clamp(0rem, 12vw, 12rem);
+            color: var(--muted);
+        }
+
+        /* =====================================================
+           6. CHAPTER 01 - OVERVIEW
+        ===================================================== */
+        .statement {
+            max-width: 62rem;
+            font-family: var(--serif);
+            font-size: clamp(1.7rem, 4.4vw, 3.6rem);
+            line-height: 1.18;
+            letter-spacing: -0.02em;
+        }
+
+        .statement mark {
+            padding: 0 0.12em;
+            color: var(--ink);
+            background: linear-gradient(transparent 55%, rgba(31, 138, 112, 0.45) 55%);
+            font-style: italic;
+        }
+
+        .statement mark.out {
+            background: linear-gradient(transparent 55%, rgba(194, 58, 28, 0.4) 55%);
+        }
+
+        /* income split into "spent" and "kept" */
+        .flow {
+            margin-top: clamp(2rem, 5vw, 3.5rem);
+        }
+
+        .flow-bar {
+            display: flex;
+            height: clamp(3.5rem, 8vw, 6rem);
+            border: 2px solid var(--ink);
+        }
+
+        .flow-bar div {
+            flex: var(--w);
+            display: flex;
+            align-items: center;
+            padding-inline: 1rem;
+            transition: flex-grow 0.4s;
+        }
+
+        .flow-bar div:hover {
+            flex-grow: calc(var(--w) + 15);
+        }
+
+        .flow-spent {
+            background: var(--red);
+            color: var(--white);
+        }
+
+        .flow-kept {
+            background: var(--teal);
+            color: var(--white);
+            justify-content: flex-end;
+        }
+
+        .flow-bar span {
+            font-family: var(--serif);
+            font-size: clamp(1rem, 2.6vw, 2rem);
+            white-space: nowrap;
+        }
+
+        .flow-caption {
+            margin-top: 0.6rem;
+            color: var(--muted);
+        }
+
+        /* four headline numbers set like a newspaper stat row */
+        .numbers {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            margin-top: clamp(3rem, 7vw, 6rem);
+            border-top: 2px solid var(--ink);
+        }
+
+        .numbers > div {
+            padding: 1.25rem 1.25rem 1.5rem 0;
+            transition: transform 0.3s;
+        }
+
+        .numbers > div + div {
+            padding-left: 1.25rem;
+            border-left: 1px solid var(--ink);
+        }
+
+        .numbers dt {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .numbers dd.big {
+            margin: 0.4rem 0;
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: clamp(1.9rem, 3.6vw, 3.2rem);
+            letter-spacing: -0.03em;
+            line-height: 1;
+            transition: color 0.3s;
+        }
+
+        .numbers > div:hover dd.big {
+            color: var(--teal-dark);
+        }
+
+        .numbers > div.is-spend:hover dd.big {
+            color: var(--red);
+        }
+
+        .numbers dd.note {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        /* savings chart (left) overlapped by the wealth block (right) */
+        .duo {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            column-gap: clamp(1.5rem, 3vw, 3rem);
+            margin-top: clamp(3rem, 8vw, 7rem);
+            align-items: start;
+        }
+
+        /* Chart and wealth card now sit in separate columns (7 + 5 of 12).
+           The asymmetry comes from the wealth card's vertical offset, not overlap. */
+        .savings {
+            grid-column: 1 / span 7;
+            grid-row: 1;
+            padding: clamp(1.25rem, 3vw, 2.5rem);
+            background: var(--white);
+            border: 2px solid var(--ink);
+        }
+
+        .savings figcaption {
+            margin-bottom: 1rem;
+        }
+
+        .cols {
+            display: flex;
+            gap: clamp(0.4rem, 1.5vw, 1rem);
+            height: 280px;
+        }
+
+        .col {
+            flex: 1;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            min-width: 0;
+        }
+
+        .col .stack {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .col .val {
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            text-align: center;
+            padding-bottom: 0.3rem;
+        }
+
+        .col i {
+            display: block;
+            height: var(--h);
+            background: var(--navy);
+            transition: background-color 0.3s, transform 0.3s;
+            transform-origin: bottom;
+        }
+
+        .col:hover i {
+            background: var(--teal);
+            transform: scaleX(1.06);
+        }
+
+        .col.now i {
+            background: var(--red);
+        }
+
+        .col .mon {
+            padding-top: 0.4rem;
+            border-top: 2px solid var(--ink);
+            text-align: center;
+        }
+
+        .wealth {
+            grid-column: 8 / span 5;
+            grid-row: 1;
+            margin-top: clamp(2.5rem, 7vw, 6rem);
+            padding: clamp(1.25rem, 3vw, 2.5rem);
+            background: var(--navy);
+            color: var(--paper);
+            border: 2px solid var(--ink);
+            box-shadow: 10px 10px 0 var(--teal);
+        }
+
+        .wealth .eyebrow {
+            color: var(--mustard);
+        }
+
+        .wealth-num {
+            margin: 0.4rem 0 1.25rem;
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: clamp(2.6rem, 6vw, 5rem);
+            letter-spacing: -0.04em;
+            line-height: 1;
+        }
+
+        .split {
+            display: flex;
+            height: 2.2rem;
+            border: 1px solid var(--paper);
+        }
+
+        .split span {
+            flex: var(--w);
+            display: flex;
+            align-items: center;
+            padding-inline: 0.6rem;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .split span:first-child {
+            background: var(--paper);
+            color: var(--ink);
+        }
+
+        .split span:last-child {
+            background: var(--teal);
+            color: var(--white);
+        }
+
+        .wealth ul {
+            margin-top: 1.25rem;
+        }
+
+        .wealth li {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            border-top: 1px solid rgba(239, 232, 216, 0.3);
+        }
+
+        /* =====================================================
+           7. CHAPTER 02 - SPENDING
+        ===================================================== */
+        .spending {
+            background-color: var(--paper-2);
+            background-image: none;
+        }
+
+        .spend-grid {
+            display: grid;
+            grid-template-columns: 5fr 7fr;
+            gap: clamp(2rem, 5vw, 5rem);
+            align-items: start;
+        }
+
+        .donut-wrap {
+            position: sticky;
+            top: 5rem;
+        }
+
+        .donut {
+            position: relative;
+            width: min(100%, 420px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: 2px solid var(--ink);
+            /* default slices; JavaScript redraws this when budgets change */
+            background: conic-gradient(
+                #16304f 0% 37.04%,
+                #1f8a70 37.04% 54.32%,
+                #c23a1c 54.32% 68.21%,
+                #d9a21b 68.21% 78.09%,
+                #7ba7c4 78.09% 86.42%,
+                #7a4b6b 86.42% 93.83%,
+                #9a958a 93.83% 100%
+            );
+        }
+
+        /* the hole in the middle of the donut */
+        .donut::after {
+            content: "";
+            position: absolute;
+            inset: 24%;
+            border: 2px solid var(--ink);
+            border-radius: 50%;
+            background: var(--paper-2);
+        }
+
+        .donut-centre {
+            position: absolute;
+            inset: 24%;
+            z-index: 2;
+            display: grid;
+            place-content: center;
+            text-align: center;
+        }
+
+        .donut-centre strong {
+            font-family: var(--serif);
+            font-size: clamp(1.4rem, 3.6vw, 2.4rem);
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        .donut-note {
+            margin-top: 1.25rem;
+            max-width: 22rem;
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: 1.25rem;
+        }
+
+        .ledger-intro {
+            margin-bottom: 1.25rem;
+            max-width: 32rem;
+            color: var(--muted);
+        }
+
+        .ledger-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) 6.5rem 6.5rem;
+            gap: 0.6rem 1rem;
+            align-items: end;
+            padding: 1.1rem 0.5rem;
+            border-top: 1px solid var(--ink);
+            transition: background-color 0.3s, padding-left 0.3s;
+        }
+
+        .ledger-row:last-of-type {
+            border-bottom: 1px solid var(--ink);
+        }
+
+        .ledger-row:hover {
+            background-color: var(--paper);
+            padding-left: 1.1rem;
+        }
+
+        .row-name {
+            display: flex;
+            align-items: baseline;
+            gap: 0.6rem;
+        }
+
+        .swatch {
+            flex-shrink: 0;
+            width: 0.9rem;
+            height: 0.9rem;
+            border-radius: 50%;
+            background: var(--c);
+            border: 1px solid var(--ink);
+            transition: transform 0.3s;
+        }
+
+        .ledger-row:hover .swatch {
+            transform: scale(1.6);
+        }
+
+        .row-name h3 {
+            font-family: var(--serif);
+            font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .share {
+            margin-left: auto;
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .field label {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.45rem 0.5rem;
+            font-family: var(--mono);
+            font-size: 1rem;
+            color: var(--ink);
+            background: var(--white);
+            border: 1px solid var(--ink);
+            border-radius: 0;
+        }
+
+        .row-meter {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.6rem 1rem;
+            margin-top: 0.4rem;
+        }
+
+        /* Custom meter (a native <progress> cannot draw past its own maximum):
+           coloured fill   = money spent, up to the budget
+           hazard stripes  = money spent BEYOND the budget
+           black tick      = the budget limit
+           The scale always leaves 25% spare room after the limit (set in JS),
+           so overspending visibly stretches the bar past the tick. */
+        .meter {
+            position: relative;
+            flex: 1 1 12rem;
+            height: 1rem;
+            border: 1px solid var(--ink);
+            background: var(--white);
+        }
+
+        .meter-fill,
+        .meter-over {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            transition: width 0.4s, left 0.4s;
+        }
+
+        .meter-fill {
+            left: 0;
+            width: var(--fill, 0%);
+            background: var(--c);
+        }
+
+        .meter-over {
+            left: var(--limit, 100%);
+            width: var(--over, 0%);
+            background: repeating-linear-gradient(45deg, var(--mustard) 0 6px, var(--ink) 6px 12px);
+        }
+
+        .meter-limit {
+            position: absolute;
+            top: -6px;
+            bottom: -6px;
+            left: var(--limit, 100%);
+            width: 3px;
+            margin-left: -1px;
+            background: var(--ink);
+            transition: left 0.4s;
+        }
+
+        /* an overspent row gets a tint and a thick red edge, not just a red bar */
+        .ledger-row.over {
+            background-color: rgba(194, 58, 28, 0.09);
+            border-left: 6px solid var(--red);
+        }
+
+        .ledger-row.over:hover {
+            background-color: rgba(194, 58, 28, 0.16);
+        }
+
+        .status {
+            min-width: 10rem;
+            text-align: right;
+            font-family: var(--mono);
+            font-size: 0.8rem;
+        }
+
+        .status.ok {
+            color: var(--teal-dark);
+        }
+
+        .status.bad {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
+            color: var(--red);
+            font-weight: 700;
+        }
+
+        .badge {
+            padding: 0.15rem 0.55rem;
+            background: var(--red);
+            color: var(--white);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* small legend above the ledger */
+        .ledger-key {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.4rem 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--muted);
+        }
+
+        .ledger-key i {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 0.45rem;
+        }
+
+        .key-limit {
+            width: 3px;
+            height: 1rem;
+            background: var(--ink);
+        }
+
+        .key-over {
+            width: 1.6rem;
+            height: 0.8rem;
+            border: 1px solid var(--ink);
+            background: repeating-linear-gradient(45deg, var(--mustard) 0 4px, var(--ink) 4px 8px);
+        }
+
+        /* one-line verdict under the ledger */
+        .over-summary {
+            margin-top: 1.25rem;
+            padding: 0.6rem 0.9rem;
+            border: 2px solid var(--ink);
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .over-summary.bad {
+            background: var(--red);
+            color: var(--white);
+        }
+
+        .over-summary.ok {
+            background: rgba(31, 138, 112, 0.15);
+            color: var(--teal-dark);
+        }
+
+        .ledger-total {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .ledger-total span {
+            display: block;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .ledger-total strong {
+            font-family: var(--serif);
+            font-size: clamp(1.4rem, 3vw, 2.4rem);
+            letter-spacing: -0.03em;
+        }
+
+        /* receipts: the transaction list reads like a till receipt */
+        .receipts {
+            display: grid;
+            grid-template-columns: 5fr 7fr;
+            gap: clamp(2rem, 5vw, 5rem);
+            align-items: center;
+            margin-top: clamp(4rem, 9vw, 8rem);
+        }
+
+        .receipts-text h3 {
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: clamp(2rem, 5vw, 4rem);
+            line-height: 0.95;
+            letter-spacing: -0.035em;
+        }
+
+        .receipts-text h3 em {
+            font-weight: 400;
+            color: var(--red);
+        }
+
+        .receipts-text p {
+            max-width: 22rem;
+            margin-top: 1rem;
+            color: var(--muted);
+        }
+
+        .receipt {
+            position: relative;
+            max-width: 34rem;
+            margin-left: auto;
+            padding: 1.75rem 1.5rem 1.5rem;
+            background: var(--white);
+            border: 1px solid var(--ink);
+            transform: rotate(1.5deg);
+            transition: transform 0.4s;
+            font-family: var(--mono);
+            font-size: 0.9rem;
+        }
+
+        .receipt:hover {
+            transform: rotate(0deg) translateY(-4px);
+        }
+
+        /* zig-zag torn edge at the bottom of the receipt */
+        .receipt::after {
+            content: "";
+            position: absolute;
+            left: -1px;
+            right: -1px;
+            bottom: -12px;
+            height: 12px;
+            background:
+                linear-gradient(135deg, var(--white) 25%, transparent 25%) -6px 0 / 12px 12px,
+                linear-gradient(225deg, var(--white) 25%, transparent 25%) -6px 0 / 12px 12px;
+        }
+
+        .receipt-head {
+            padding-bottom: 0.75rem;
+            border-bottom: 2px dashed var(--ink);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .receipt li {
+            display: grid;
+            grid-template-columns: 4.2rem 1fr auto;
+            gap: 0.75rem;
+            padding: 0.7rem 0;
+            border-bottom: 1px dashed rgba(15, 27, 45, 0.4);
+        }
+
+        .receipt small {
+            display: block;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .receipt .in {
+            color: var(--teal-dark);
+            font-weight: 700;
+        }
+
+        .receipt .outgo {
+            color: var(--red);
+            font-weight: 700;
+        }
+
+        .receipt-foot {
+            margin-top: 0.9rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.78rem;
+        }
+
+        /* =====================================================
+           8. CHAPTER 03 - INVESTMENTS
+        ===================================================== */
+        .portfolio-total {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 0.5rem 2rem;
+        }
+
+        .portfolio-total strong {
+            font-family: var(--serif);
+            font-size: clamp(3.4rem, 13vw, 11rem);
+            line-height: 0.9;
+            letter-spacing: -0.05em;
+        }
+
+        .gain-pill {
+            padding: 0.35rem 0.9rem;
+            background: var(--teal);
+            color: var(--white);
+            border: 2px solid var(--ink);
+            border-radius: 999px;
+            transform: rotate(-3deg);
+            font-family: var(--mono);
+            font-size: clamp(0.8rem, 1.6vw, 1rem);
+            font-weight: 700;
+        }
+
+        /* the portfolio as one horizontal skyline, width = share */
+        .alloc {
+            display: flex;
+            height: clamp(7rem, 16vw, 12rem);
+            margin-top: clamp(1.5rem, 4vw, 3rem);
+            border: 2px solid var(--ink);
+        }
+
+        .alloc > div {
+            flex: var(--w);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 0.9rem 1rem;
+            min-width: 0;
+            color: var(--white);
+            transition: flex-grow 0.4s;
+        }
+
+        .alloc > div + div {
+            border-left: 2px solid var(--ink);
+        }
+
+        .alloc > div:hover {
+            flex-grow: calc(var(--w) + 12);
+        }
+
+        .alloc b {
+            font-family: var(--serif);
+            font-size: clamp(1.8rem, 5vw, 4rem);
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+
+        .alloc .a-mf { background: var(--navy); }
+        .alloc .a-st { background: var(--red); }
+        .alloc .a-fd { background: var(--teal); }
+
+        .holdings {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: clamp(1.5rem, 4vw, 3.5rem);
+            margin-top: clamp(2rem, 5vw, 4rem);
+        }
+
+        /* staggered columns so the row isn't a flat line */
+        .holding:nth-child(2) {
+            margin-top: 3.5rem;
+        }
+
+        .holding:nth-child(3) {
+            margin-top: 1.5rem;
+        }
+
+        .holding {
+            padding-top: 1rem;
+            border-top: 4px solid var(--ink);
+            transition: border-color 0.3s, transform 0.3s;
+        }
+
+        .holding:hover {
+            border-color: var(--teal);
+            transform: translateY(-6px);
+        }
+
+        .holding .idx {
+            color: var(--red);
+        }
+
+        .holding h3 {
+            margin: 0.3rem 0 0.2rem;
+            font-family: var(--serif);
+            font-size: clamp(1.6rem, 3vw, 2.4rem);
+            letter-spacing: -0.03em;
+            line-height: 1;
+        }
+
+        .holding .tagline {
+            font-family: var(--serif);
+            font-style: italic;
+            color: var(--teal-dark);
+        }
+
+        .holding .desc {
+            margin: 0.75rem 0 1rem;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .holding dl > div {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.4rem 0;
+            border-top: 1px solid rgba(15, 27, 45, 0.25);
+            font-size: 0.95rem;
+        }
+
+        .holding dt {
+            color: var(--muted);
+        }
+
+        .holding dd {
+            font-family: var(--mono);
+            font-weight: 700;
+        }
+
+        .holding dd.up {
+            color: var(--teal-dark);
+        }
+
+        /* risk meter made of five CSS dots */
+        .dots {
+            display: inline-flex;
+            gap: 5px;
+        }
+
+        .dots i {
+            width: 0.8rem;
+            height: 0.8rem;
+            border: 1.5px solid var(--ink);
+            border-radius: 50%;
+        }
+
+        .risk-1 i:nth-child(-n+1),
+        .risk-3 i:nth-child(-n+3),
+        .risk-5 i:nth-child(-n+5) {
+            background: var(--ink);
+        }
+
+        /* timeline of milestones */
+        .timeline-wrap {
+            margin-top: clamp(4rem, 9vw, 8rem);
+        }
+
+        .timeline {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-top: 2.5rem;
+        }
+
+        .timeline::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0.45rem;
+            border-top: 2px dashed var(--ink);
+        }
+
+        .timeline li {
+            position: relative;
+            padding-top: 2rem;
+        }
+
+        .timeline li::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 1rem;
+            height: 1rem;
+            background: var(--paper);
+            border: 3px solid var(--ink);
+            border-radius: 50%;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .timeline li:hover::before,
+        .timeline li:last-child::before {
+            background: var(--red);
+            transform: scale(1.3);
+        }
+
+        .timeline strong {
+            display: block;
+            font-family: var(--serif);
+            font-size: 1.3rem;
+            line-height: 1.2;
+        }
+
+        .timeline p {
+            font-size: 0.92rem;
+            color: var(--muted);
+        }
+
+        /* =====================================================
+           9. CHAPTER 04 - CALCULATOR (dark section)
+        ===================================================== */
+        .calc-section {
+            position: relative;
+            overflow: hidden;
+            padding-block: var(--section-space);
+            background-color: var(--navy);
+            background-image: none;
+            color: var(--paper);
+        }
+
+        .calc-section .chapter-num {
+            -webkit-text-stroke-color: var(--paper);
+            opacity: 0.25;
+        }
+
+        .calc-section .chapter-head .eyebrow {
+            color: var(--mustard);
+        }
+
+        .calc-section .chapter-head h2 em {
+            color: var(--mustard);
+        }
+
+        .calc-section .chapter-head .lede {
+            color: rgba(239, 232, 216, 0.75);
+        }
+
+        .calc-layout {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            align-items: start;
+        }
+
+        /* the form is a paper card that overlaps the forecast */
+        .calc-form {
+            grid-column: 1 / span 5;
+            grid-row: 1;
+            position: relative;
+            z-index: 2;
+            padding: clamp(1.25rem, 3vw, 2.25rem);
+            background: var(--paper);
+            color: var(--ink);
+            border: 2px solid var(--ink);
+            box-shadow: 10px 10px 0 var(--teal);
+        }
+
+        .calc-form h3 {
+            font-family: var(--serif);
+            font-size: 1.8rem;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.25rem;
+        }
+
+        .calc-form .formula {
+            margin-bottom: 1.25rem;
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group > label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .two-up {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .chip {
+            padding: 0.25rem 0.7rem;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--ink);
+            background: transparent;
+            border: 1px solid var(--ink);
+            border-radius: 999px;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .chip:hover {
+            background: var(--ink);
+            color: var(--paper);
+        }
+
+        .error-message {
+            min-height: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--red);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.8rem 1.4rem;
+            font-family: var(--mono);
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--paper);
+            background: var(--ink);
+            border: 2px solid var(--ink);
+            cursor: pointer;
+            transition: background-color 0.25s, color 0.25s;
+        }
+
+        .btn span {
+            display: inline-block;
+            transition: transform 0.25s;
+        }
+
+        .btn:hover {
+            background: var(--teal);
+            border-color: var(--ink);
+        }
+
+        .btn:hover span {
+            transform: translateX(5px);
+        }
+
+        .btn.secondary {
+            color: var(--ink);
+            background: transparent;
+        }
+
+        .btn.secondary:hover {
+            background: var(--paper-2);
+        }
+
+        .forecast {
+            grid-column: 5 / span 8;
+            grid-row: 1;
+            padding: clamp(1.25rem, 3vw, 2.5rem);
+            padding-left: clamp(1.5rem, 12vw, 11rem);
+            margin-top: clamp(2rem, 6vw, 5rem);
+            border: 2px solid var(--paper);
+            transition: opacity 0.3s;
+        }
+
+        .forecast.is-stale {
+            opacity: 0.3;
+        }
+
+        .plain {
+            font-family: var(--serif);
+            font-size: clamp(1.4rem, 3vw, 2.4rem);
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+
+        .plain strong {
+            color: var(--mustard);
+            font-style: italic;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(239, 232, 216, 0.4);
+        }
+
+        .stats dt {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(239, 232, 216, 0.7);
+        }
+
+        .stats dd {
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: clamp(1.2rem, 2.4vw, 1.9rem);
+            letter-spacing: -0.02em;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .chart-legend span::before {
+            content: "";
+            display: inline-block;
+            width: 0.8rem;
+            height: 0.8rem;
+            margin-right: 0.5rem;
+            vertical-align: -1px;
+            border: 1px solid var(--paper);
+        }
+
+        .chart-legend .l-base::before {
+            background: var(--paper);
+        }
+
+        .chart-legend .l-growth::before {
+            background: var(--mustard);
+        }
+
+        .growth-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 240px;
+            margin-top: 0.75rem;
+            border-bottom: 2px solid var(--paper);
+        }
+
+        .bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column-reverse;
+            min-width: 2px;
+            transform-origin: bottom;
+            animation: rise 0.6s ease-out both;
+            animation-delay: calc(var(--i) * 25ms);
+        }
+
+        .bar-base {
+            background: var(--paper);
+        }
+
+        .bar-growth {
+            background: var(--mustard);
+            transition: background-color 0.2s;
+        }
+
+        .bar:hover .bar-growth {
+            background: var(--white);
+        }
+
+        .axis {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.4rem;
+            color: rgba(239, 232, 216, 0.7);
+        }
+
+        /* =====================================================
+           10. FOOTER - the closing page
+        ===================================================== */
+        .footer {
+            position: relative;
+            overflow: hidden;
+            padding-block: var(--section-space) clamp(1.5rem, 4vw, 3rem);
+            background-color: var(--teal);
+            color: var(--ink);
+        }
+
+        .footer .eyebrow {
+            margin-bottom: 1rem;
+        }
+
+        .footer-title {
+            max-width: 16ch;
+            font-family: var(--serif);
+            font-weight: 700;
+            font-size: clamp(2.8rem, 9vw, 8rem);
+            line-height: 0.92;
+            letter-spacing: -0.04em;
+        }
+
+        .footer-title em {
+            font-weight: 400;
+            color: var(--paper);
+        }
+
+        .footer-cols {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: clamp(2.5rem, 6vw, 5rem);
+            padding-top: 1.5rem;
+            border-top: 2px solid var(--ink);
+        }
+
+        .footer-cols h3 {
+            margin-bottom: 0.75rem;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .footer-cols li {
+            margin-bottom: 0.3rem;
+        }
+
+        .footer-cols a {
+            text-decoration: none;
+            background: linear-gradient(var(--ink), var(--ink)) left bottom / 0% 2px no-repeat;
+            transition: background-size 0.3s;
+        }
+
+        .footer-cols a:hover {
+            background-size: 100% 2px;
+        }
+
+        .back-top {
+            display: inline-block;
+            margin-top: 2rem;
+        }
+
+        /* The closing wordmark uses the same sizing system as the hero,
+           so the whole word is always visible. It sits on a rule like a
+           signature at the end of the page. */
+        .footer .wordmark-box {
+            margin-top: clamp(2rem, 6vw, 4.5rem);
+            padding-top: clamp(0.9rem, 2vw, 1.5rem);
+            border-top: 3px solid var(--ink);
+        }
+
+        .footer .wm-fin {
+            color: var(--paper);
+        }
+
+        .footer .wm-track {
+            color: var(--ink);
+        }
+
+        .footer .wm-reg {
+            color: var(--ink);
+        }
+
+        /* =====================================================
+           11. ANIMATIONS (CSS only)
+        ===================================================== */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes bob {
+            50% { transform: translateY(6px); }
+        }
+
+        @keyframes scroll-left {
+            to { transform: translateX(-50%); }
+        }
+
+        @keyframes rise {
+            from { transform: scaleY(0); }
+            to   { transform: scaleY(1); }
+        }
+
+        /* Scroll-driven reveals: progressive enhancement.
+           Browsers without support simply show everything. */
+        @media (prefers-reduced-motion: no-preference) {
+            @supports (animation-timeline: view()) {
+                .reveal {
+                    animation: reveal linear both;
+                    animation-timeline: view();
+                    animation-range: entry 0% entry 60%;
+                }
+
+                .draw-x {
+                    animation: draw-x linear both;
+                    animation-timeline: view();
+                    animation-range: entry 10% entry 100%;
+                }
+
+                .col i {
+                    animation: draw-y linear both;
+                    animation-timeline: view();
+                    animation-range: entry 10% entry 100%;
+                }
+
+                @keyframes reveal {
+                    from { opacity: 0; transform: translateY(40px); }
+                    to   { opacity: 1; transform: none; }
+                }
+
+                @keyframes draw-x {
+                    from { clip-path: inset(0 100% 0 0); }
+                    to   { clip-path: inset(0 0 0 0); }
+                }
+
+                @keyframes draw-y {
+                    from { clip-path: inset(100% 0 0 0); }
+                    to   { clip-path: inset(0 0 0 0); }
+                }
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+
+            *, *::before, *::after {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        /* =====================================================
+           12. RESPONSIVE
+        ===================================================== */
+        @media (max-width: 1000px) {
+            .spend-grid,
+            .receipts {
+                grid-template-columns: 1fr;
+            }
+
+            .donut-wrap {
+                position: static;
+            }
+
+            .receipt {
+                margin-inline: auto;
+            }
+
+            .holdings {
+                grid-template-columns: 1fr;
+            }
+
+            .holding:nth-child(n) {
+                margin-top: 0;
+            }
+
+            .timeline {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .timeline::before {
+                display: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            /* stack chart above wealth card; positive margin so nothing overlaps */
+            .duo {
+                display: block;
+            }
+
+            .wealth {
+                margin: 1.75rem 0.75rem 0 1.5rem;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .numbers {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .numbers > div:nth-child(3) {
+                padding-left: 0;
+                border-left: none;
+            }
+
+            .numbers > div:nth-child(n+3) {
+                border-top: 1px solid var(--ink);
+            }
+
+            .calc-layout {
+                display: block;
+            }
+
+            .forecast {
+                margin-top: -1rem;
+                padding-left: clamp(1.25rem, 3vw, 2.5rem);
+                padding-top: 3rem;
+            }
+
+            .calc-form {
+                margin-right: 0.75rem;
+            }
+
+            .hero-lower {
+                display: block;
+            }
+
+            /* tagline and coin stack; coin moves under the text, right-aligned */
+            .hero-tagline,
+            .coin {
+                grid-column: 1 / -1;
+            }
+
+            .coin {
+                margin-top: 0.75rem;
+                margin-right: 14px;                    /* keeps the dashed ring inside the page */
+            }
+
+            .scroll-cue {
+                margin-bottom: 1.5rem;
+            }
+
+            .footer-cols {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar .brand {
+                display: none;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .ledger-row {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .row-name {
+                grid-column: 1 / -1;
+            }
+
+            .row-meter {
+                flex-wrap: wrap;
+            }
+
+            .status {
+                text-align: left;
+            }
+
+            .status.bad {
+                align-items: flex-start;
+            }
+
+            .ledger-total {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .timeline {
+                grid-template-columns: 1fr;
+            }
+
+            .two-up {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body id="top">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <!-- ================= HEADER + NAVIGATION ================= -->
+    <header class="topbar">
+        <a class="brand" href="#top">FinTrack<sup>&reg;</sup></a>
+        <nav aria-label="Chapters">
+            <ul>
+                <li><a class="nav-link" href="#overview"><span>01</span>Overview</a></li>
+                <li><a class="nav-link" href="#spending"><span>02</span>Spending</a></li>
+                <li><a class="nav-link" href="#investments"><span>03</span>Investments</a></li>
+                <li><a class="nav-link" href="#calculator"><span>04</span>Calculator</a></li>
+                <li><a class="nav-link" href="#closing"><span>05</span>Closing</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main id="main-content">
+
+        <!-- ================= HERO ================= -->
+        <section class="hero">
+            <div class="wrap">
+                <p class="hero-meta eyebrow">
+                    <span>Vol. 01 &mdash; November 2026</span>
+                    <span>A personal wealth journal</span>
+                    <span>Bengaluru &middot; INR &#8377;</span>
+                    <span>Demo edition</span>
+                </p>
+
+                <div class="wordmark-box">
+                    <h1 class="wordmark"><span class="wm-fin">Fin</span><span class="wm-track">Track</span><sup class="wm-reg" aria-hidden="true">&reg;</sup></h1>
+                </div>
+
+                <div class="hero-story">
+                    <p class="hero-tagline">
+                        <span class="line">Your money</span>
+                        <span class="line line-2">has a</span>
+                        <span class="line"><em class="squiggle">story.</em></span>
+                    </p>
+
+                    <div class="coin" aria-hidden="true">
+                        &#8377;
+                        <div class="sticker">100% demo data<br>0% real money</div>
+                    </div>
+                </div>
+
+                <div class="hero-lower">
+                    <p class="scroll-cue eyebrow">Scroll to read the first issue <span aria-hidden="true">&darr;</span></p>
+                    <p class="intro">
+                        FinTrack is a wealth journal, not a spreadsheet with ambitions. Every month we read your
+                        money back to you: what came in, where it slipped away, what it is quietly becoming.
+                        Then you get to play with what happens next.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- decorative moving strip -->
+        <div class="marquee" aria-hidden="true">
+            <div class="marquee-track">
+                <div class="marquee-group">
+                    <span>Earn</span><span>&#10038;</span><span>Spend</span><span>&#10038;</span><span>Save</span><span>&#10038;</span><span>Invest</span><span>&#10038;</span><span>Repeat</span><span>&#10038;</span>
+                    <span>Earn</span><span>&#10038;</span><span>Spend</span><span>&#10038;</span><span>Save</span><span>&#10038;</span><span>Invest</span><span>&#10038;</span><span>Repeat</span><span>&#10038;</span>
+                </div>
+                <div class="marquee-group">
+                    <span>Earn</span><span>&#10038;</span><span>Spend</span><span>&#10038;</span><span>Save</span><span>&#10038;</span><span>Invest</span><span>&#10038;</span><span>Repeat</span><span>&#10038;</span>
+                    <span>Earn</span><span>&#10038;</span><span>Spend</span><span>&#10038;</span><span>Save</span><span>&#10038;</span><span>Invest</span><span>&#10038;</span><span>Repeat</span><span>&#10038;</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CHAPTER 01: OVERVIEW ================= -->
+        <section class="chapter" id="overview">
+            <div class="wrap">
+
+                <div class="chapter-head">
+                    <span class="chapter-num" aria-hidden="true">01</span>
+                    <p class="eyebrow">Chapter 01 / 04 &mdash; The overview</p>
+                    <h2>Where you <em>stand.</em></h2>
+                    <p class="lede">Forget tiles and gauges. Here is your month, in plain sentences.</p>
+                </div>
+
+                <p class="statement reveal">
+                    This month, <mark>&#8377;65,000</mark> came in. <mark class="out">&#8377;32,400</mark> went out.
+                    What stayed behind, <mark>&#8377;32,600</mark>, is the part that quietly builds your future.
+                </p>
+
+                <div class="flow reveal">
+                    <div class="flow-bar draw-x" role="img" aria-label="Of the 65,000 rupees earned, about 50 percent was spent and 50 percent was kept">
+                        <div class="flow-spent" style="--w: 49.85"><span>Spent 50%</span></div>
+                        <div class="flow-kept" style="--w: 50.15"><span>Kept 50%</span></div>
+                    </div>
+                    <p class="flow-caption eyebrow">A savings rate of 50%. Hover the bar. It likes attention.</p>
+                </div>
+
+                <dl class="numbers reveal">
+                    <div>
+                        <dt>Account balance</dt>
+                        <dd class="big">&#8377;1,84,500</dd>
+                        <dd class="note">Cash across savings and current accounts.</dd>
+                    </div>
+                    <div>
+                        <dt>Monthly income</dt>
+                        <dd class="big">&#8377;65,000</dd>
+                        <dd class="note">Salary, plus a little freelance.</dd>
+                    </div>
+                    <div class="is-spend">
+                        <dt>Monthly expenses</dt>
+                        <dd class="big">&#8377;32,400</dd>
+                        <dd class="note">Roughly half of what came in.</dd>
+                    </div>
+                    <div>
+                        <dt>Investment value</dt>
+                        <dd class="big">&#8377;2,35,000</dd>
+                        <dd class="note">Funds, stocks and one very patient FD.</dd>
+                    </div>
+                </dl>
+
+                <div class="duo">
+                    <figure class="savings reveal">
+                        <figcaption class="eyebrow">What you kept, month by month</figcaption>
+                        <div class="cols" role="img" aria-label="Savings from June to November: 24,000; 27,500; 31,000; 29,800; 33,200; 32,600 rupees">
+                            <div class="col"><div class="stack"><span class="val">24k</span><i style="--h: 63.6%"></i></div><span class="mon eyebrow">Jun</span></div>
+                            <div class="col"><div class="stack"><span class="val">27.5k</span><i style="--h: 72.9%"></i></div><span class="mon eyebrow">Jul</span></div>
+                            <div class="col"><div class="stack"><span class="val">31k</span><i style="--h: 82.2%"></i></div><span class="mon eyebrow">Aug</span></div>
+                            <div class="col"><div class="stack"><span class="val">29.8k</span><i style="--h: 79%"></i></div><span class="mon eyebrow">Sep</span></div>
+                            <div class="col"><div class="stack"><span class="val">33.2k</span><i style="--h: 88%"></i></div><span class="mon eyebrow">Oct</span></div>
+                            <div class="col now"><div class="stack"><span class="val">32.6k</span><i style="--h: 86.4%"></i></div><span class="mon eyebrow">Nov</span></div>
+                        </div>
+                    </figure>
+
+                    <aside class="wealth reveal" aria-label="Total wealth">
+                        <p class="eyebrow">Total wealth</p>
+                        <p class="wealth-num">&#8377;4,19,500</p>
+                        <div class="split" role="img" aria-label="44 percent cash and 56 percent invested">
+                            <span style="--w: 44">Cash 44%</span>
+                            <span style="--w: 56">Invested 56%</span>
+                        </div>
+                        <ul>
+                            <li><span>Account balance</span><strong>&#8377;1,84,500</strong></li>
+                            <li><span>Investments</span><strong>&#8377;2,35,000</strong></li>
+                        </ul>
+                    </aside>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= CHAPTER 02: SPENDING ================= -->
+        <section class="chapter spending" id="spending">
+            <div class="wrap">
+
+                <div class="chapter-head">
+                    <span class="chapter-num" aria-hidden="true">02</span>
+                    <p class="eyebrow">Chapter 02 / 04 &mdash; The spending</p>
+                    <h2>Where it <em>went.</em></h2>
+                    <p class="lede">Money leaves quietly. Here it is, caught in the act.</p>
+                </div>
+
+                <div class="spend-grid">
+
+                    <div class="donut-wrap reveal">
+                        <div class="donut" id="donut" role="img" aria-label="Donut chart of spending by category">
+                            <div class="donut-centre">
+                                <span class="eyebrow">Spent</span>
+                                <strong id="donut-total">&#8377;32,400</strong>
+                            </div>
+                        </div>
+                        <p class="donut-note" id="donut-note">Housing takes the biggest slice.</p>
+                    </div>
+
+                    <div>
+                        <p class="ledger-intro">
+                            Budgets are promises. Change any number in the ledger below and the whole picture
+                            redraws itself, including the donut.
+                        </p>
+
+                        <p class="ledger-key eyebrow">
+                            <span><i class="key-limit"></i>Budget limit</span>
+                            <span><i class="key-over"></i>Spent beyond the limit</span>
+                        </p>
+
+                        <ul class="ledger" id="ledger">
+                            <li class="ledger-row" style="--c: #16304f" data-name="Housing">
+                                <div class="row-name"><span class="swatch"></span><h3>Housing</h3><span class="share">37%</span></div>
+                                <div class="field"><label for="b-housing">Budget &#8377;</label><input id="b-housing" class="budget-input" type="number" min="0" value="12000"></div>
+                                <div class="field"><label for="s-housing">Spent &#8377;</label><input id="s-housing" class="spent-input" type="number" min="0" value="12000"></div>
+                                <div class="row-meter"><div class="meter" role="img" aria-label="Housing budget used"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div><p class="status"></p></div>
+                            </li>
+                            <li class="ledger-row" style="--c: #1f8a70" data-name="Groceries">
+                                <div class="row-name"><span class="swatch"></span><h3>Groceries</h3><span class="share">17%</span></div>
+                                <div class="field"><label for="b-groceries">Budget &#8377;</label><input id="b-groceries" class="budget-input" type="number" min="0" value="6000"></div>
+                                <div class="field"><label for="s-groceries">Spent &#8377;</label><input id="s-groceries" class="spent-input" type="number" min="0" value="5600"></div>
+                                <div class="row-meter"><div class="meter" role="img" aria-label="Groceries budget used"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div><p class="status"></p></div>
+                            </li>
+                            <li class="ledger-row" style="--c: #c23a1c" data-name="Shopping">
+                                <div class="row-name"><span class="swatch"></span><h3>Shopping</h3><span class="share">14%</span></div>
+                                <div class="field"><label for="b-shopping">Budget &#8377;</label><input id="b-shopping" class="budget-input" type="number" min="0" value="4000"></div>
+                                <div class="field"><label for="s-shopping">Spent &#8377;</label><input id="s-shopping" class="spent-input" type="number" min="0" value="4500"></div>
+                                <div class="row-meter"><div class="meter" role="img" aria-label="Shopping budget used"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div><p class="status"></p></div>
+                            </li>
+                            <li class="ledger-row" style="--c: #d9a21b" data-name="Dining out">
+                                <div class="row-name"><span class="swatch"></span><h3>Dining out</h3><span class="share">10%</span></div>
+                                <div class="field"><label for="b-dining">Budget &#8377;</label><input id="b-dining" class="budget-input" type="number" min="0" value="3000"></div>
+                                <div class="field"><label for="s-dining">Spent &#8377;</label><input id="s-dining" class="spent-input" type="number" min="0" value="3200"></div>
+                                <div class="row-meter"><div class="meter" role="img" aria-label="Dining out budget used"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div><p class="status"></p></div>
+                            </li>
+                            <li class="ledger-row" style="--c: #7ba7c4" data-name="Bills and subscriptions">
+                                <div class="row-name"><span class="swatch"></span><h3>Bills &amp; subscriptions</h3><span class="share">8%</span></div>
+                                <div class="field"><label for="b-bills">Budget &#8377;</label><input id="b-bills" class="budget-input" type="number" min="0" value="3000"></div>
+                                <div class="field"><label for="s-bills">Spent &#8377;</label><input id="s-bills" class="spent-input" type="number" min="0" value="2700"></div>
+                                <div class="row-meter"><div class="meter" role="img" aria-label="Bills budget used"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div><p class="status"></p></div>
+                            </li>
+                            <li class="ledger-row" style="--c: #7a4b6b" data-name="Transport">
+                                <div class="row-name"><span class="swatch"></span><h3>Transport</h3><span class="share">7%</span></div>
+                                <div class="field"><label for="b-transport">Budget &#8377;</label><input id="b-transport" class="budget-input" type="number" min="0" value="2500"></div>
+                                <div class="field"><label for="s-transport">Spent &#8377;</label><input id="s-transport" class="spent-input" type="number" min="0" value="2400"></div>
+                                <div class="row-meter"><div class="meter" role="img" aria-label="Transport budget used"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div><p class="status"></p></div>
+                            </li>
+                            <li class="ledger-row" style="--c: #9a958a" data-name="Everything else">
+                                <div class="row-name"><span class="swatch"></span><h3>Everything else</h3><span class="share">6%</span></div>
+                                <div class="field"><label for="b-other">Budget &#8377;</label><input id="b-other" class="budget-input" type="number" min="0" value="2000"></div>
+                                <div class="field"><label for="s-other">Spent &#8377;</label><input id="s-other" class="spent-input" type="number" min="0" value="2000"></div>
+                                <div class="row-meter"><div class="meter" role="img" aria-label="Other budget used"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div><p class="status"></p></div>
+                            </li>
+                        </ul>
+
+                        <p class="over-summary" id="over-summary" aria-live="polite"></p>
+
+                        <div class="ledger-total" aria-live="polite">
+                            <div><span>Total budget</span><strong id="total-budget">&#8377;32,500</strong></div>
+                            <div><span>Total spent</span><strong id="total-spent">&#8377;32,400</strong></div>
+                            <div><span id="total-left-label">Left over</span><strong id="total-left">&#8377;100</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- recent transactions, styled as a till receipt -->
+                <div class="receipts">
+                    <div class="receipts-text reveal">
+                        <p class="eyebrow">Recent transactions</p>
+                        <h3>The last six entries in the <em>diary.</em></h3>
+                        <p>Every rupee leaves a paper trail. This is the short version of it.</p>
+                    </div>
+
+                    <aside class="receipt reveal" aria-label="Recent transactions">
+                        <p class="receipt-head">FinTrack Daily Ledger</p>
+                        <ol>
+                            <li><time>05 NOV</time><span>Monthly salary<small>Income</small></span><b class="in">+&#8377;65,000</b></li>
+                            <li><time>04 NOV</time><span>Apartment rent<small>Housing</small></span><b class="outgo">-&#8377;12,000</b></li>
+                            <li><time>03 NOV</time><span>Supermarket<small>Groceries</small></span><b class="outgo">-&#8377;2,150</b></li>
+                            <li><time>02 NOV</time><span>Electricity bill<small>Bills</small></span><b class="outgo">-&#8377;1,800</b></li>
+                            <li><time>01 NOV</time><span>Metro card recharge<small>Transport</small></span><b class="outgo">-&#8377;800</b></li>
+                            <li><time>31 OCT</time><span>Online shopping<small>Shopping</small></span><b class="outgo">-&#8377;3,200</b></li>
+                        </ol>
+                        <p class="receipt-foot">Demo data &middot; Thank you &middot; Keep the change</p>
+                    </aside>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= CHAPTER 03: INVESTMENTS ================= -->
+        <section class="chapter" id="investments">
+            <div class="wrap">
+
+                <div class="chapter-head">
+                    <span class="chapter-num" aria-hidden="true">03</span>
+                    <p class="eyebrow">Chapter 03 / 04 &mdash; The investments</p>
+                    <h2>Where it <em>grows.</em></h2>
+                    <p class="lede">Three places your money goes to work, and how differently each one behaves.</p>
+                </div>
+
+                <div class="portfolio-total reveal">
+                    <strong>&#8377;2,35,000</strong>
+                    <span class="gain-pill">+&#8377;28,000 &middot; +13.5% overall</span>
+                </div>
+
+                <div class="alloc reveal" role="img" aria-label="Portfolio split: mutual funds 51 percent, stocks 28 percent, fixed deposits 21 percent">
+                    <div class="a-mf" style="--w: 51"><span class="eyebrow">Mutual funds</span><b>51%</b></div>
+                    <div class="a-st" style="--w: 28"><span class="eyebrow">Stocks</span><b>28%</b></div>
+                    <div class="a-fd" style="--w: 21"><span class="eyebrow">FDs</span><b>21%</b></div>
+                </div>
+
+                <div class="holdings">
+                    <article class="holding reveal">
+                        <p class="idx eyebrow">No. 01</p>
+                        <h3>Mutual funds</h3>
+                        <p class="tagline">The steady climber</p>
+                        <p class="desc">Index and flexi-cap funds, bought a little at a time and left alone.</p>
+                        <dl>
+                            <div><dt>Invested</dt><dd>&#8377;1,02,000</dd></div>
+                            <div><dt>Value today</dt><dd>&#8377;1,20,000</dd></div>
+                            <div><dt>Return</dt><dd class="up">+17.6%</dd></div>
+                            <div><dt>Risk</dt><dd><span class="dots risk-3" role="img" aria-label="Risk 3 out of 5"><i></i><i></i><i></i><i></i><i></i></span></dd></div>
+                        </dl>
+                    </article>
+
+                    <article class="holding reveal">
+                        <p class="idx eyebrow">No. 02</p>
+                        <h3>Stocks</h3>
+                        <p class="tagline">The restless one</p>
+                        <p class="desc">Direct equity: higher highs, sleepless lows, and strong opinions.</p>
+                        <dl>
+                            <div><dt>Invested</dt><dd>&#8377;58,000</dd></div>
+                            <div><dt>Value today</dt><dd>&#8377;65,000</dd></div>
+                            <div><dt>Return</dt><dd class="up">+12.1%</dd></div>
+                            <div><dt>Risk</dt><dd><span class="dots risk-5" role="img" aria-label="Risk 5 out of 5"><i></i><i></i><i></i><i></i><i></i></span></dd></div>
+                        </dl>
+                    </article>
+
+                    <article class="holding reveal">
+                        <p class="idx eyebrow">No. 03</p>
+                        <h3>Fixed deposits</h3>
+                        <p class="tagline">The sleeper</p>
+                        <p class="desc">Boring on purpose. Guaranteed on paper, and very good at doing nothing.</p>
+                        <dl>
+                            <div><dt>Invested</dt><dd>&#8377;47,000</dd></div>
+                            <div><dt>Value today</dt><dd>&#8377;50,000</dd></div>
+                            <div><dt>Return</dt><dd class="up">+6.4%</dd></div>
+                            <div><dt>Risk</dt><dd><span class="dots risk-1" role="img" aria-label="Risk 1 out of 5"><i></i><i></i><i></i><i></i><i></i></span></dd></div>
+                        </dl>
+                    </article>
+                </div>
+
+                <div class="timeline-wrap reveal">
+                    <p class="eyebrow">How the portfolio got here</p>
+                    <ol class="timeline">
+                        <li><strong>Mar 2025</strong><p>First monthly SIP starts. Small, but it never misses.</p></li>
+                        <li><strong>Aug 2025</strong><p>First direct stock purchase. Nerves of jelly.</p></li>
+                        <li><strong>Jan 2026</strong><p>A fixed deposit joins, for balance.</p></li>
+                        <li><strong>Oct 2026</strong><p>The portfolio crosses &#8377;2 lakh.</p></li>
+                    </ol>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= CHAPTER 04: CALCULATOR ================= -->
+        <section class="calc-section" id="calculator">
+            <div class="wrap">
+
+                <div class="chapter-head">
+                    <span class="chapter-num" aria-hidden="true">04</span>
+                    <p class="eyebrow">Chapter 04 / 04 &mdash; The calculator</p>
+                    <h2>Now, the <em>future.</em></h2>
+                    <p class="lede">Compound interest is just patience with a formula. Try it with your own portfolio.</p>
+                </div>
+
+                <div class="calc-layout">
+
+                    <form class="calc-form" id="calc-form" novalidate>
+                        <h3>Let it compound</h3>
+                        <p class="formula">A = P &times; (1 + r/n) ^ (n &times; t)</p>
+
+                        <div class="form-group">
+                            <label for="amount">Amount to invest (&#8377;)</label>
+                            <input type="number" id="amount" value="235000" min="1" step="any" required>
+                            <div class="presets">
+                                <button type="button" class="chip" id="use-portfolio">Use my portfolio &#8377;2,35,000</button>
+                            </div>
+                        </div>
+
+                        <div class="two-up">
+                            <div class="form-group">
+                                <label for="rate">Yearly return (%)</label>
+                                <input type="number" id="rate" value="10" min="0" max="100" step="any" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="years">Years</label>
+                                <input type="number" id="years" value="10" min="1" max="60" step="any" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: -0.5rem;">
+                            <span class="eyebrow">Quick rates</span>
+                            <div class="presets">
+                                <button type="button" class="chip" data-rate="6.5">FD 6.5%</button>
+                                <button type="button" class="chip" data-rate="10">Balanced 10%</button>
+                                <button type="button" class="chip" data-rate="12">Equity 12%</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="frequency">Compounding</label>
+                            <select id="frequency">
+                                <option value="1">Yearly</option>
+                                <option value="2">Half-yearly</option>
+                                <option value="4">Quarterly</option>
+                                <option value="12">Monthly</option>
+                            </select>
+                        </div>
+
+                        <p id="error" class="error-message" role="alert"></p>
+
+                        <div class="button-row">
+                            <button type="submit" class="btn">Calculate <span aria-hidden="true">&rarr;</span></button>
+                            <button type="button" class="btn secondary" id="reset-btn">Reset</button>
+                        </div>
+                    </form>
+
+                    <div class="forecast" id="forecast" aria-live="polite">
+                        <p class="plain" id="plain-words"></p>
+
+                        <dl class="stats">
+                            <div><dt>You put in</dt><dd id="out-invested"></dd></div>
+                            <div><dt>Growth</dt><dd id="out-interest"></dd></div>
+                            <div><dt>Becomes</dt><dd id="out-future"></dd></div>
+                        </dl>
+
+                        <p class="chart-legend eyebrow">
+                            <span class="l-base">Your money</span>
+                            <span class="l-growth">Growth</span>
+                            <span id="out-multiple"></span>
+                        </p>
+
+                        <div class="growth-chart" id="growth-chart" role="img" aria-label="Bar chart of the investment growing year by year"></div>
+                        <p class="axis eyebrow"><span>Year 1</span><span id="axis-end"></span></p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="footer" id="closing">
+        <div class="wrap">
+            <p class="eyebrow">Chapter 05 &mdash; The end (for now)</p>
+            <p class="footer-title">That was the issue. <em>See you next month.</em></p>
+
+            <div class="footer-cols">
+                <div>
+                    <h3>Read again</h3>
+                    <ul>
+                        <li><a href="#overview">01 &mdash; Where you stand</a></li>
+                        <li><a href="#spending">02 &mdash; Where it went</a></li>
+                        <li><a href="#investments">03 &mdash; Where it grows</a></li>
+                        <li><a href="#calculator">04 &mdash; The future</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>The fine print</h3>
+                    <ul>
+                        <li>Every figure here is demonstration data.</li>
+                        <li>Calculations are estimates, not financial advice.</li>
+                        <li>Say hi: <a href="mailto:hello@fintrack.example">hello@fintrack.example</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Credits</h3>
+                    <ul>
+                        <li>Written and built by hand in HTML and CSS.</li>
+                        <li>Typeset in system serif, sans and mono fonts.</li>
+                        <li>A tiny bit of JavaScript for the maths.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <a class="back-top eyebrow" href="#top">Back to the cover &uarr;</a>
+            <p>&copy; 2026 FinTrack. Vol. 01.</p>
+
+            <div class="wordmark-box" aria-hidden="true">
+                <p class="wordmark"><span class="wm-fin">Fin</span><span class="wm-track">Track</span><sup class="wm-reg">&reg;</sup></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ---------- Helpers: format numbers as Indian rupees ----------
+        function rupees(value) {
+            return "₹" + value.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+        }
+
+        function rupeesExact(value) {
+            return "₹" + value.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        // =====================================================
+        // 1. Investment calculator
+        // =====================================================
+        const calcForm = document.getElementById("calc-form");
+        const amountInput = document.getElementById("amount");
+        const rateInput = document.getElementById("rate");
+        const yearsInput = document.getElementById("years");
+        const frequencyInput = document.getElementById("frequency");
+        const errorBox = document.getElementById("error");
+        const forecast = document.getElementById("forecast");
+        const chart = document.getElementById("growth-chart");
+
+        function showError(message) {
+            errorBox.textContent = message;
+            forecast.classList.add("is-stale"); // dim old results so they are not mistaken for new ones
+        }
+
+        function runCalculator() {
+            const amount = parseFloat(amountInput.value);
+            const rate = parseFloat(rateInput.value);
+            const years = parseFloat(yearsInput.value);
+            const n = parseInt(frequencyInput.value);
+
+            // Input validation
+            if (isNaN(amount) || isNaN(rate) || isNaN(years)) {
+                showError("Please fill in all three fields with numbers.");
+                return;
+            }
+            if (amount <= 0) {
+                showError("The amount must be greater than 0.");
+                return;
+            }
+            if (rate < 0 || rate > 100) {
+                showError("The yearly return must be between 0 and 100.");
+                return;
+            }
+            if (years <= 0 || years > 60) {
+                showError("Years must be between 1 and 60.");
+                return;
+            }
+
+            errorBox.textContent = "";
+            forecast.classList.remove("is-stale");
+
+            // Compound interest formula
+            const futureValue = amount * Math.pow(1 + rate / 100 / n, n * years);
+            const interest = futureValue - amount;
+            const multiple = futureValue / amount;
+
+            document.getElementById("out-invested").textContent = rupees(amount);
+            document.getElementById("out-interest").textContent = rupees(interest);
+            document.getElementById("out-future").textContent = rupees(futureValue);
+            document.getElementById("out-multiple").textContent = multiple.toFixed(2) + "x your money";
+            document.getElementById("axis-end").textContent = "Year " + years;
+
+            // The result written as a sentence
+            const yearWord = years === 1 ? "year" : "years";
+            document.getElementById("plain-words").innerHTML =
+                "<strong>" + rupees(amount) + "</strong> left alone at <strong>" + rate + "%</strong> for <strong>" +
+                years + " " + yearWord + "</strong> becomes <strong>" + rupees(futureValue) +
+                "</strong>. That is " + rupees(interest) + " you never had to work for.";
+
+            drawChart(amount, rate, years, n, futureValue);
+        }
+
+        // One bar per year. Light part = your money, gold part = growth.
+        function drawChart(amount, rate, years, n, futureValue) {
+            chart.innerHTML = "";
+
+            const points = [];
+            for (let y = 1; y <= Math.floor(years); y++) {
+                points.push(y);
+            }
+            if (years % 1 !== 0) {
+                points.push(years); // last bar for a part-year
+            }
+
+            points.forEach(function (year, index) {
+                const value = amount * Math.pow(1 + rate / 100 / n, n * year);
+
+                const bar = document.createElement("div");
+                bar.className = "bar";
+                bar.style.height = (value / futureValue) * 100 + "%";
+                bar.style.setProperty("--i", index);
+                bar.title = "Year " + Number(year.toFixed(1)) + ": " + rupees(value);
+
+                const base = document.createElement("span");
+                base.className = "bar-base";
+                base.style.height = (amount / value) * 100 + "%";
+
+                const growth = document.createElement("span");
+                growth.className = "bar-growth";
+                growth.style.height = (1 - amount / value) * 100 + "%";
+
+                bar.appendChild(base);
+                bar.appendChild(growth);
+                chart.appendChild(bar);
+            });
+        }
+
+        calcForm.addEventListener("submit", function (event) {
+            event.preventDefault(); // stop the page from reloading
+            runCalculator();
+        });
+
+        document.getElementById("reset-btn").addEventListener("click", function () {
+            amountInput.value = 235000;
+            rateInput.value = 10;
+            yearsInput.value = 10;
+            frequencyInput.value = 1;
+            runCalculator();
+        });
+
+        // Link the calculator to the portfolio chapter
+        document.getElementById("use-portfolio").addEventListener("click", function () {
+            amountInput.value = 235000;
+            runCalculator();
+        });
+
+        // Quick-rate buttons
+        document.querySelectorAll("[data-rate]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                rateInput.value = button.dataset.rate;
+                runCalculator();
+            });
+        });
+
+        // =====================================================
+        // 2. Budget ledger + spending donut
+        // =====================================================
+        const ledger = document.getElementById("ledger");
+        const donut = document.getElementById("donut");
+
+        function updateBudget() {
+            const rows = document.querySelectorAll(".ledger-row");
+            const data = [];
+            let totalBudget = 0;
+            let totalSpent = 0;
+            let overCount = 0;   // how many categories are over budget
+            let overTotal = 0;   // total rupees over, across those categories
+
+            // Pass 1: read every row, update its meter and status
+            rows.forEach(function (row) {
+                // empty or negative values count as 0
+                const budget = Math.max(parseFloat(row.querySelector(".budget-input").value) || 0, 0);
+                const spent = Math.max(parseFloat(row.querySelector(".spent-input").value) || 0, 0);
+                const status = row.querySelector(".status");
+                const meter = row.querySelector(".meter");
+                const name = row.dataset.name;
+
+                // The meter's scale always leaves 25% spare room after the budget,
+                // so overspending visibly stretches past the budget line.
+                const scale = Math.max(budget * 1.25, spent, 1);
+                meter.style.setProperty("--limit", (budget / scale) * 100 + "%");
+                meter.style.setProperty("--fill", (Math.min(spent, budget) / scale) * 100 + "%");
+                meter.style.setProperty("--over", (Math.max(spent - budget, 0) / scale) * 100 + "%");
+
+                if (spent > budget) {
+                    const excess = spent - budget;
+                    row.classList.add("over");
+                    status.className = "status bad";
+                    status.innerHTML = "<strong class=\"badge\">▲ Over budget</strong><span>" +
+                        rupees(excess) + " over the limit</span>";
+                    meter.setAttribute("aria-label", name + ": over budget by " + rupees(excess));
+                    overCount++;
+                    overTotal += excess;
+                } else {
+                    row.classList.remove("over");
+                    status.className = "status ok";
+                    status.textContent = rupees(budget - spent) + " to spare";
+                    meter.setAttribute("aria-label", name + ": " + rupees(spent) + " of " + rupees(budget) + " budget used");
+                }
+
+                totalBudget += budget;
+                totalSpent += spent;
+                data.push({
+                    row: row,
+                    name: row.dataset.name,
+                    colour: getComputedStyle(row).getPropertyValue("--c").trim(),
+                    spent: spent
+                });
+            });
+
+            // Pass 2: now the total is known, work out each slice of the donut
+            let start = 0;
+            const stops = [];
+            let biggest = data[0];
+
+            data.forEach(function (item) {
+                const share = totalSpent > 0 ? (item.spent / totalSpent) * 100 : 0;
+                item.row.querySelector(".share").textContent = Math.round(share) + "%";
+
+                if (share > 0) {
+                    stops.push(item.colour + " " + start + "% " + (start + share) + "%");
+                    start += share;
+                }
+                if (item.spent > biggest.spent) {
+                    biggest = item;
+                }
+            });
+
+            donut.style.background = totalSpent > 0
+                ? "conic-gradient(" + stops.join(", ") + ")"
+                : "var(--paper)";
+
+            document.getElementById("donut-total").textContent = rupees(totalSpent);
+            document.getElementById("donut-note").textContent =
+                totalSpent > 0 ? biggest.name + " takes the biggest slice." : "Nothing spent yet. Suspicious.";
+
+            document.getElementById("total-budget").textContent = rupees(totalBudget);
+            document.getElementById("total-spent").textContent = rupees(totalSpent);
+
+            const left = totalBudget - totalSpent;
+            document.getElementById("total-left-label").textContent = left < 0 ? "Over total budget by" : "Left over";
+            document.getElementById("total-left").textContent = rupees(Math.abs(left));
+
+            // One-line verdict under the ledger
+            const summary = document.getElementById("over-summary");
+            if (overCount > 0) {
+                summary.className = "over-summary bad";
+                summary.textContent = "▲ " + overCount + (overCount === 1 ? " category is" : " categories are") +
+                    " over budget, by " + rupees(overTotal) + " in total.";
+            } else {
+                summary.className = "over-summary ok";
+                summary.textContent = "✓ Every category is within budget.";
+            }
+        }
+
+        // one listener on the list handles every input (event delegation)
+        ledger.addEventListener("input", updateBudget);
+
+        // Run both features once when the page loads
+        updateBudget();
+        runCalculator();
+    </script>
+</body>
+</html>

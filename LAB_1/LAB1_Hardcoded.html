@@ -1,0 +1,253 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FinTrack - Finance Management</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f2f4f7;
+            color: #333;
+        }
+
+        header {
+            background-color: #1b3048;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        nav {
+            background-color: #294966;
+            padding: 12px;
+            text-align: center;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 15px;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        main {
+            width: 85%;
+            margin: 25px auto;
+        }
+
+        h2 {
+            color: #1b3048;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background-color: white;
+            padding: 20px;
+            flex: 1;
+            min-width: 180px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .card h3 {
+            color: #267b70;
+        }
+
+        .calculator {
+            background-color: white;
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        input {
+            display: block;
+            padding: 10px;
+            margin: 10px 0;
+            width: 90%;
+            max-width: 300px;
+        }
+
+        button {
+            background-color: #267b70;
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background-color: #1b5c53;
+        }
+
+        #result {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        footer {
+            background-color: #1b3048;
+            color: white;
+            text-align: center;
+            padding: 15px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 600px) {
+            main {
+                width: 92%;
+            }
+
+            .container {
+                flex-direction: column;
+            }
+
+            nav a {
+                display: inline-block;
+                margin: 5px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>FinTrack</h1>
+        <p>Personal Finance and Investment Manager</p>
+    </header>
+
+    <nav>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#transactions">Transactions</a>
+        <a href="#investments">Investments</a>
+        <a href="#calculator">Calculator</a>
+    </nav>
+
+    <main>
+
+        <section id="dashboard">
+            <h2>Financial Dashboard</h2>
+            <p>Welcome! Here is an overview of your finances.</p>
+
+            <div class="container">
+
+                <div class="card">
+                    <h3>₹50,000</h3>
+                    <p>Total Balance</p>
+                </div>
+
+                <div class="card">
+                    <h3>₹35,000</h3>
+                    <p>Monthly Income</p>
+                </div>
+
+                <div class="card">
+                    <h3>₹12,000</h3>
+                    <p>Monthly Expenses</p>
+                </div>
+
+                <div class="card">
+                    <h3>₹25,000</h3>
+                    <p>Investment Value</p>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="transactions">
+            <h2>Recent Transactions</h2>
+
+            <div class="card">
+                <p>Groceries - ₹2,000</p>
+                <p>Electricity Bill - ₹1,500</p>
+                <p>Shopping - ₹3,000</p>
+                <p>Salary Received - ₹35,000</p>
+            </div>
+        </section>
+
+        <section id="investments">
+            <h2>My Investments</h2>
+
+            <div class="card">
+                <p>Mutual Funds - ₹10,000</p>
+                <p>Stocks - ₹8,000</p>
+                <p>Fixed Deposits - ₹7,000</p>
+            </div>
+        </section>
+
+        <section class="calculator" id="calculator">
+
+            <h2>Investment Calculator</h2>
+
+            <p>
+                Calculate the estimated future value
+                of your investment using compound interest.
+            </p>
+
+            <label>Investment Amount (₹)</label>
+            <input type="number" id="amount" placeholder="Enter amount">
+
+            <label>Annual Interest Rate (%)</label>
+            <input type="number" id="rate" placeholder="Enter annual rate">
+
+            <label>Duration (Years)</label>
+            <input type="number" id="years" placeholder="Enter years">
+
+            <button onclick="calculateInvestment()">
+                Calculate
+            </button>
+
+            <p id="result"></p>
+
+        </section>
+
+    </main>
+    <footer>
+        <p>FinTrack - Personal Finance Manager</p>
+        <p>Contact: support@fintrack.com</p>
+        <p>&copy; 2026 FinTrack. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+
+        function calculateInvestment() {
+
+            let amount = parseFloat(document.getElementById("amount").value);
+            let rate = parseFloat(document.getElementById("rate").value);
+            let years = parseFloat(document.getElementById("years").value);
+
+            let result = document.getElementById("result");
+
+            if (isNaN(amount) || isNaN(rate) || isNaN(years) ||
+                amount <= 0 || rate < 0 || years <= 0) {
+
+                result.innerHTML = "Please enter valid investment details.";
+                return;
+            }
+
+            let futureValue = amount * Math.pow(1 + rate / 100, years);
+
+            result.innerHTML =
+                "Estimated Future Value: ₹" +
+                futureValue.toFixed(2);
+        }
+
+    </script>
+
+</body>
+</html>
