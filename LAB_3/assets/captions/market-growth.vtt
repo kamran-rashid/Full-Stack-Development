@@ -1,0 +1,34 @@
+WEBVTT - FinTrack: Growth is rarely a straight line
+
+NOTE
+Two speakers, each in its own <v> voice tag.
+Cue settings keep them apart: Narrator bottom-left, Advisor bottom-right.
+Classes inside a cue: .key (a term worth noticing) and .warn (the disclaimer).
+
+cue-1
+00:00:00.800 --> 00:00:03.071 align:start position:4% size:72%
+<v Narrator>Money does not grow in a straight line.
+
+cue-2
+00:00:03.321 --> 00:00:07.900 align:end position:96% size:72%
+<v Advisor>Right. A fund can fall for months, and still finish the decade higher.
+
+cue-3
+00:00:08.150 --> 00:00:09.917 align:start position:4% size:72%
+<v Narrator>So what should a saver watch?
+
+cue-4
+00:00:10.167 --> 00:00:18.283 align:end position:96% size:72%
+<v Advisor>Time. ₹2,35,000, left alone at 10% for 10 years, becomes about ₹6 lakh.
+
+cue-5
+00:00:18.533 --> 00:00:20.713 align:start position:4% size:72%
+<v Narrator>And money needed within three years?
+
+cue-6
+00:00:20.963 --> 00:00:24.141 align:end position:96% size:72%
+<v Advisor>Keep that in a <c.key>fixed deposit</c>, not in shares.
+
+cue-7
+00:00:24.391 --> 00:00:29.201 align:start position:4% size:72%
+<v Narrator>Small steps add up. These figures are demonstration data, <c.warn>not advice</c>.

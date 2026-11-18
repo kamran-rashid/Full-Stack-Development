@@ -1,0 +1,5354 @@
+@charset "UTF-8";
+/* =====================================================================
+   FinTrack - A Personal Wealth Journal       (CSC413-8, Labs 2 and 3)
+   styles.css - hand-written CSS, no framework.
+   Sections 0-13 are Lab 2 and need no JavaScript. Section 14 styles the
+   Lab 3 transaction tracker, which is drawn by js/*.js.
+
+   TABLE OF CONTENTS
+     0.  Typed variables (@property)
+     1.  Design tokens: light, dark, higher contrast
+     2.  Base and accessibility (focus, skip link, visually-hidden)
+     3.  Top bar and navigation
+     4.  Hero
+     5.  Chapter layout
+     6.  Chapter 01  - Overview
+     7.  Chapter 02  - Spending (donut, ledger, receipt, alerts)
+     8.  Investments (holdings, media, picture, video, captions)   [page chapter 04 since Lab 3]
+     9.  Calculator (+ glossary popover)                          [page chapter 05 since Lab 3]
+    10.  Footer
+    11.  THE ENGINE: how CSS does the maths (state -> numbers -> text)
+    12.  CONTEXTS: every @media query, grouped by the user situation it serves
+    13.  PRINT: the monthly statement
+    14.  Chapter 03 - Tracker (Lab 3, JavaScript)
+
+   Reference browser: latest Google Chrome. See README for Firefox/Safari notes.
+===================================================================== */
+
+
+/* =====================================================
+   0. TYPED VARIABLES
+   A registered custom property has a real type, so calc()
+   is evaluated to a number and style() queries can test it.
+===================================================== */
+@property --n  { syntax: "<number>";  inherits: false; initial-value: 0; }   /* the value an .inr / formatter shows */
+
+/* rupee formatter: one integer split into Indian digit groups */
+@property --nh { syntax: "<number>";  inherits: false; initial-value: 0; }   /* thousands part of a big .inr value */
+@property --fvh { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --fvr { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --gnh { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --gnr { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --v  { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --cr { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --la { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --th { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --hu { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --te { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --lt { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --f7 { syntax: "<integer>"; inherits: true; initial-value: 0; }   /* 1 when value >= 1 crore  */
+@property --f5 { syntax: "<integer>"; inherits: true; initial-value: 0; }   /* 1 when value >= 1 lakh   */
+@property --f3 { syntax: "<integer>"; inherits: true; initial-value: 0; }   /* 1 when value >= 1,000    */
+
+/* rate, years, multiple formatters */
+@property --ri   { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --rd   { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --fd   { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --yone { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --mi   { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --md   { syntax: "<integer>"; inherits: true; initial-value: 0; }
+
+/* calculator outputs */
+@property --fv     { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --gain   { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --mult   { syntax: "<number>"; inherits: true; initial-value: 1; }
+@property --is-last { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --vis     { syntax: "<integer>"; inherits: false; initial-value: 0; }
+
+/* ledger flags: 0 or 1 values we can ask about with @container style() */
+@property --is-over    { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --any-over   { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --one-over   { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --over-count { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --deficit    { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --big1 { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --big2 { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --big3 { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --big4 { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --big5 { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --big6 { syntax: "<integer>"; inherits: true; initial-value: 0; }
+@property --big7 { syntax: "<integer>"; inherits: true; initial-value: 0; }
+
+
+/* =====================================================
+   1. DESIGN TOKENS
+   Identity: an independent financial magazine.
+   Warm paper, navy ink, one teal for "growth",
+   one vermilion for "spending".
+   Every colour pair below was checked for WCAG AA contrast.
+===================================================== */
+:root {
+    color-scheme: light dark;
+
+    /* surfaces and text  (Lab 3 refresh: a cleaner ivory, a deeper midnight ink,
+       and jewel-toned accents; every text pair still passes WCAG AA) */
+    --paper: #f3efe6;
+    --paper-2: #e8e1d0;
+    --surface: #fffdf8;            /* cards, inputs (was --white) */
+    --ink: #0c1424;
+    --muted: #4a5262;
+
+    /* deep surfaces (wealth card, calculator, ledger edge) keep their own text colour */
+    --navy: #0f2442;
+    --on-navy: #f3efe6;
+    --on-navy-soft: #bcc3ce;
+
+    /* accents */
+    --teal: #0b7a5e;               /* jade: fills that carry white text */
+    --teal-dark: #0a6650;          /* jade used as text on paper */
+    --red: #cf4520;                /* vermilion: fills that carry white text */
+    --red-text: #a9341a;           /* vermilion used as small text on paper */
+    --mustard: #e2a93b;            /* brass */
+    --on-fill: #fffdf8;            /* text on jade / vermilion fills */
+    --ink-fixed: #0c1424;          /* text on brass: must stay dark in every mode */
+
+    /* donut / ledger category colours (same order as the ledger) */
+    --cat1: #0f2442;
+    --cat2: #0b8f6e;
+    --cat3: #cf4520;
+    --cat4: #e2a93b;
+    --cat5: #7fa9cf;
+    --cat6: #7b4c77;
+    --cat7: #a39c8e;
+
+    /* film, glow and motion (Lab 3 refresh) */
+    --midnight: #08111f;           /* the opening film's own background */
+    --glow: 226, 169, 59;          /* brass, as r,g,b for soft glows */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);          /* fast start, long gentle settle */
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+    --focus: #cf4520;
+    --hair: 1px;                   /* faint rules; 0.5px on high-resolution screens */
+    --line-rgb: 12, 20, 36;        /* colour of faint ruled lines */
+    --line-alpha: 0.045;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: "Helvetica Neue", Arial, system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+    --gutter: clamp(0.8rem, 2.48vw, 1.86rem);
+    --section-space: clamp(3.2rem, 6.2vw, 5.58rem);
+    --tap: 2.75rem;                /* minimum touch target: 44px */
+}
+
+
+/* =====================================================
+   2. BASE AND ACCESSIBILITY
+===================================================== */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 4rem;
+    -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: var(--sans);
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--ink);
+    background-color: var(--paper);
+    /* faint ledger lines, like accounting paper */
+    background-image:
+        linear-gradient(rgba(var(--line-rgb), var(--line-alpha)) var(--hair), transparent var(--hair)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.05 0 0 0 0 0.08 0 0 0 0 0.14 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 100% 2.2rem, 160px 160px;
+    overflow-wrap: break-word;
+}
+
+::selection {
+    background: var(--teal);
+    color: var(--on-fill);
+}
+
+/* :where() has zero specificity, so these resets never fight a component rule */
+:where(h1, h2, h3, h4, p, ul, ol, dl, dd, figure) {
+    margin: 0;
+}
+
+:where(ul, ol) {
+    padding: 0;
+    list-style: none;
+}
+
+a {
+    color: inherit;
+}
+
+img, video, svg {
+    max-width: 100%;
+}
+
+em {
+    font-style: italic;
+}
+
+abbr[title] {
+    text-decoration: underline dotted;
+    text-underline-offset: 0.2em;
+    cursor: help;
+}
+
+/* ---------- keyboard focus: always visible, never removed ---------- */
+:where(a, button, summary, video, [tabindex]):focus-visible,
+.pills input:focus-visible + label {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+}
+
+/* a group of controls lights up as a whole while any of its members has focus */
+fieldset:focus-within > legend {
+    color: var(--red-text);
+}
+
+.wrap {
+    max-width: 1400px;
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+}
+
+.skip-link {
+    position: absolute;
+    left: -999px;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.6rem 1rem;
+    z-index: 100;
+}
+
+.skip-link:focus {
+    left: 0.5rem;
+    top: 0.5rem;
+}
+
+/* visible to screen readers only */
+.vh {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* small uppercase "label" text used all over the page */
+.eyebrow {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* things that exist only for print (the statement letterhead, printed values) */
+.print-only {
+    display: none;
+}
+
+
+/* =====================================================
+   3. TOP BAR + NAVIGATION
+===================================================== */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem var(--gutter);
+    background-color: var(--paper);
+    border-bottom: 1px solid var(--ink);
+}
+
+.brand {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: -0.03em;
+    text-decoration: none;
+}
+
+.brand sup {
+    font-size: 0.5em;
+    color: var(--red-text);
+}
+
+.topbar nav {
+    overflow-x: auto;
+}
+
+.topbar ul {
+    display: flex;
+    gap: 0.25rem 1.5rem;
+}
+
+.topbar a.nav-link {
+    display: block;
+    white-space: nowrap;
+    text-decoration: none;
+    padding: 0.25rem 0;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: linear-gradient(var(--red), var(--red)) left bottom / 0% 2px no-repeat;
+    transition: background-size 0.3s, color 0.3s;
+}
+
+.topbar a.nav-link span {
+    color: var(--red-text);
+    margin-right: 0.35em;
+}
+
+/* "You are here": the chapter that is the :target of the last nav click gets the full underline.
+   :has() lets <body> see which chapter is targeted, so no scroll-spy script is needed. */
+body:has(#overview:target)    .nav-link[href="#overview"],
+body:has(#spending:target)    .nav-link[href="#spending"],
+body:has(#investments:target) .nav-link[href="#investments"],
+body:has(#calculator:target)  .nav-link[href="#calculator"],
+body:has(#closing:target)     .nav-link[href="#closing"] {
+    background-size: 100% 2px;
+    font-weight: 700;
+}
+
+/* the Spending link carries a live over-budget count (see ENGINE) */
+.nav-link[href="#spending"]::after {
+    content: "";
+}
+
+
+/* =====================================================
+   4. HERO
+===================================================== */
+.hero {
+    position: relative;
+    overflow: hidden;
+    padding-top: clamp(1.2rem, 2.48vw, 1.86rem);
+    padding-bottom: clamp(2.4rem, 4.96vw, 3.72rem);
+}
+
+.hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.4rem 2rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--ink);
+}
+
+/* ---------- The FINTRACK wordmark (hero and footer) ----------
+   The wrapper is a size container; the word's font-size is a percentage of that
+   container's width (cqi), so the word always fits the space it lives in. */
+.wordmark-box {
+    container-type: inline-size;
+}
+
+.wordmark {
+    display: block;
+    margin: 0;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: min(16vw, 14rem);               /* fallback for old browsers */
+    font-size: clamp(2.25rem, 8.32cqi, 12.48rem);
+    line-height: 0.8;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.wm-fin {
+    color: var(--ink);
+}
+
+.wm-track {
+    color: var(--teal-dark);
+}
+
+.wm-reg {
+    margin-left: 0.15em;
+    font-size: 0.16em;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1;
+    vertical-align: top;
+    color: var(--red-text);
+}
+
+.opening-mark {
+    padding-bottom: clamp(0.5rem, 0.744vw, 0.558rem);
+}
+
+.hero-story {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1.5rem;
+    align-items: center;
+    margin-top: clamp(1.2rem, 2.48vw, 2.17rem);
+    padding-bottom: 1.6rem;                    /* room for the sticker under the coin */
+}
+
+.hero-tagline {
+    grid-column: 1 / span 8;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(2.028rem, 4.65vw, 4.03rem);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+}
+
+.hero-tagline .line {
+    display: block;
+}
+
+.hero-tagline .line-2 {
+    padding-left: clamp(0.8rem, 6.2vw, 6.2rem);
+}
+
+.hero-tagline em {
+    font-weight: 400;
+    color: var(--red-text);
+}
+
+.hero-tagline .squiggle {
+    display: inline-block;
+    padding-bottom: 0.08em;
+    background: repeating-linear-gradient(135deg, var(--red) 0 3px, transparent 3px 7px) left bottom / 100% 0.06em no-repeat;
+}
+
+.coin {
+    position: relative;
+    grid-column: 9 / span 4;
+    justify-self: end;
+    width: clamp(127.5px, 19.5vw, 270px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background:
+        repeating-radial-gradient(circle, transparent 0 14px, rgba(12, 20, 36, 0.18) 14px 15px),
+        var(--teal);
+    color: var(--on-fill);
+    font-family: var(--serif);
+    font-size: clamp(3.375rem, 5.72vw, 4.94rem);
+    line-height: 1;
+}
+
+.coin::after {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    border: 2px dashed var(--ink);
+    border-radius: 50%;
+    animation: spin 40s linear infinite;
+}
+
+.sticker {
+    position: absolute;
+    z-index: 3;
+    right: 8%;
+    bottom: -1.4rem;
+    padding: 0.6rem 1rem;
+    color: var(--ink-fixed);
+    line-height: 1.35;
+    white-space: nowrap;
+    background: var(--mustard);
+    border: 2px solid var(--ink-fixed);
+    border-radius: 999px;
+    transform: rotate(-9deg);
+    transition: transform 0.3s;
+    font-family: var(--mono);
+    font-size: clamp(0.617rem, 1.288vw, 0.782rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: center;
+}
+
+.scroll-cue {
+    grid-column: 1 / span 4;
+}
+
+.scroll-cue span {
+    display: inline-block;
+    animation: bob 1.8s ease-in-out infinite;
+}
+
+.intro {
+    grid-column: 6 / span 7;
+    max-width: 36rem;
+    font-size: clamp(0.997rem, 1.472vw, 1.196rem);
+}
+
+/* phone-only "this month at a glance" strip (shown in CONTEXTS, hidden everywhere else) */
+.glance {
+    display: none;
+}
+
+/* scrolling strip of words */
+.marquee {
+    overflow: hidden;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.9rem 0;
+    border-block: 1px solid var(--ink);
+}
+
+.marquee-track {
+    display: flex;
+    width: max-content;
+    animation: scroll-left 30s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+    animation-play-state: paused;
+}
+
+.marquee-group {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.marquee-group span {
+    padding-inline: 1.2rem;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: clamp(1.26rem, 2.46vw, 1.968rem);
+    white-space: nowrap;
+}
+
+.marquee-group span:nth-child(even) {
+    color: var(--mustard);
+    font-style: normal;
+}
+
+
+/* =====================================================
+   5. CHAPTER LAYOUT (shared by chapters 01 - 04)
+===================================================== */
+.chapter {
+    padding-block: var(--section-space);
+}
+
+.chapter-head {
+    position: relative;
+    margin-bottom: clamp(1.6rem, 3.72vw, 3.1rem);
+}
+
+/* giant outlined number sits behind the heading */
+.chapter-num {
+    position: absolute;
+    right: 0;
+    top: -0.35em;
+    z-index: 0;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(5.25rem, 12.48vw, 10.4rem);
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--ink);
+    opacity: 0.35;
+    user-select: none;
+}
+
+.chapter-head .eyebrow {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 0.75rem;
+    color: var(--red-text);
+}
+
+.chapter-head h2 {
+    position: relative;
+    z-index: 1;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(2.34rem, 5.58vw, 4.96rem);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+}
+
+.chapter-head h2 em {
+    font-weight: 400;
+    color: var(--teal-dark);
+}
+
+.chapter-head .lede {
+    position: relative;
+    z-index: 1;
+    max-width: 30rem;
+    margin-top: 1.25rem;
+    margin-left: clamp(0rem, 7.44vw, 7.44rem);
+    color: var(--muted);
+}
+
+/* ":target" chapters announce themselves: the eyebrow gains a "you are here" arrow */
+:is(.chapter, .calc-section):target .chapter-head .eyebrow::before {
+    content: "\25B8\00a0";
+}
+
+
+/* =====================================================
+   6. CHAPTER 01 - OVERVIEW
+===================================================== */
+.statement {
+    max-width: 62rem;
+    font-family: var(--serif);
+    font-size: clamp(1.445rem, 3.168vw, 2.592rem);
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+}
+
+.statement mark {
+    padding: 0 0.12em;
+    color: var(--ink);
+    background: linear-gradient(transparent 55%, rgba(31, 138, 112, 0.45) 55%);
+    font-style: italic;
+}
+
+.statement mark.out {
+    background: linear-gradient(transparent 55%, rgba(207, 69, 32, 0.4) 55%);
+}
+
+/* income split into "spent" and "kept" */
+.flow {
+    margin-top: clamp(1.6rem, 3.1vw, 2.17rem);
+}
+
+.flow-bar {
+    display: flex;
+    height: clamp(2.975rem, 6vw, 4.5rem);
+    border: 2px solid var(--ink);
+}
+
+.flow-bar div {
+    flex: var(--w);
+    display: flex;
+    align-items: center;
+    padding-inline: 1rem;
+    transition: flex-grow 0.4s;
+}
+
+.flow-spent {
+    background: var(--red);
+    color: var(--on-fill);
+}
+
+.flow-kept {
+    background: var(--teal);
+    color: var(--on-fill);
+    justify-content: flex-end;
+}
+
+.flow-bar span {
+    font-family: var(--serif);
+    font-size: clamp(0.9rem, 2.132vw, 1.64rem);
+    white-space: nowrap;
+}
+
+.flow-caption {
+    margin-top: 0.6rem;
+    color: var(--muted);
+}
+
+/* the caption is written twice; the input context decides which one is shown */
+.hint-touch {
+    display: none;
+}
+
+/* four headline numbers set like a newspaper stat row */
+.numbers {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    margin-top: clamp(2.4rem, 4.34vw, 3.72rem);
+    border-top: 2px solid var(--ink);
+}
+
+.numbers > div {
+    padding: 1.25rem 1.25rem 1.5rem 0;
+    transition: transform 0.3s;
+}
+
+.numbers > div + div {
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--ink);
+}
+
+.numbers dt {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.numbers dd.big {
+    margin: 0.4rem 0;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(1.615rem, 2.592vw, 2.304rem);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    transition: color 0.3s;
+}
+
+.numbers dd.note {
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+/* savings chart (left) beside the wealth block (right) */
+.duo {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    column-gap: clamp(1.2rem, 1.86vw, 1.86rem);
+    margin-top: clamp(2.4rem, 4.96vw, 4.34rem);
+    align-items: start;
+}
+
+.savings {
+    grid-column: 1 / span 7;
+    grid-row: 1;
+    padding: clamp(1rem, 1.86vw, 1.55rem);
+    background: var(--surface);
+    border: 2px solid var(--ink);
+}
+
+.savings figcaption {
+    margin-bottom: 1rem;
+}
+
+/* FIGURE NUMBERS: a CSS counter numbers every <figure> on the page in reading order,
+   so the label can never go out of sync if a figure is added or removed. */
+main {
+    counter-reset: fig;
+}
+
+figure figcaption::before {
+    counter-increment: fig;
+    content: "FIG. " counter(fig, decimal-leading-zero) " \2014\00a0";
+    font-weight: 700;
+    color: var(--red-text);
+}
+
+.cols {
+    display: flex;
+    gap: clamp(0.4rem, 0.93vw, 0.62rem);
+    height: 210px;
+}
+
+.col {
+    flex: 1;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    min-width: 0;
+}
+
+.col .stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.col .val {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    text-align: center;
+    padding-bottom: 0.3rem;
+}
+
+.col i {
+    display: block;
+    height: var(--h);
+    background: var(--navy);
+    transition: background-color 0.3s, transform 0.3s;
+    transform-origin: bottom;
+}
+
+.col.now i {
+    background: var(--red);
+}
+
+.col .mon {
+    padding-top: 0.4rem;
+    border-top: 2px solid var(--ink);
+    text-align: center;
+}
+
+.wealth {
+    grid-column: 8 / span 5;
+    grid-row: 1;
+    margin-top: clamp(2rem, 4.34vw, 3.72rem);
+    padding: clamp(1rem, 1.86vw, 1.55rem);
+    background: var(--navy);
+    color: var(--on-navy);
+    border: 2px solid var(--ink);
+    box-shadow: 10px 10px 0 var(--teal);
+}
+
+.wealth .eyebrow {
+    color: var(--mustard);
+}
+
+.wealth-num {
+    margin: 0.4rem 0 1.25rem;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(2.028rem, 3.72vw, 3.1rem);
+    letter-spacing: -0.04em;
+    line-height: 1;
+}
+
+.split {
+    display: flex;
+    height: 2.2rem;
+    border: 1px solid var(--on-navy);
+}
+
+.split span {
+    flex: var(--w);
+    display: flex;
+    align-items: center;
+    padding-inline: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.split span:first-child {
+    background: var(--on-navy);
+    color: var(--ink-fixed);
+}
+
+.split span:last-child {
+    background: var(--teal);
+    color: var(--on-fill);
+}
+
+.wealth ul {
+    margin-top: 1.25rem;
+}
+
+.wealth li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-top: var(--hair) solid rgba(239, 232, 216, 0.3);
+}
+
+
+/* =====================================================
+   7. CHAPTER 02 - SPENDING
+===================================================== */
+.spending {
+    background-color: var(--paper-2);
+    background-image: none;
+}
+
+.spend-grid {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    gap: clamp(1.6rem, 3.1vw, 3.1rem);
+    align-items: start;
+}
+
+.donut-wrap {
+    position: sticky;
+    top: 5rem;
+}
+
+.donut {
+    position: relative;
+    width: min(100%, 340px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    /* The slices are drawn from the cumulative percentages --p1 ... --p7 that the ENGINE
+       (section 11) works out from whichever amounts are ticked in the ledger. */
+    background: conic-gradient(
+        var(--cat1) 0 calc(var(--p1) * 1%),
+        var(--cat2) 0 calc(var(--p2) * 1%),
+        var(--cat3) 0 calc(var(--p3) * 1%),
+        var(--cat4) 0 calc(var(--p4) * 1%),
+        var(--cat5) 0 calc(var(--p5) * 1%),
+        var(--cat6) 0 calc(var(--p6) * 1%),
+        var(--cat7) 0 100%
+    );
+}
+
+/* the hole in the middle of the donut */
+.donut::after {
+    content: "";
+    position: absolute;
+    inset: 24%;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: var(--paper-2);
+}
+
+.donut-centre {
+    position: absolute;
+    inset: 24%;
+    z-index: 2;
+    display: grid;
+    place-content: center;
+    text-align: center;
+}
+
+.donut-centre strong {
+    font-family: var(--serif);
+    font-size: clamp(1.26rem, 2.952vw, 1.968rem);
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+.donut-note {
+    margin-top: 1.25rem;
+    max-width: 22rem;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.25rem;
+}
+
+/* only the name of the biggest slice is shown (chosen by the ENGINE) */
+.donut-note .big {
+    display: none;
+}
+
+.ledger-intro {
+    margin-bottom: 1.25rem;
+    max-width: 32rem;
+    color: var(--muted);
+}
+
+/* ---------- shared control styles: radio buttons dressed as segmented buttons ---------- */
+.field {
+    position: relative;                /* anchors the visually hidden radios */
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.field legend {
+    display: block;
+    padding: 0;
+    margin-bottom: 0.35rem;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+/* Native radios stay in the page (so Tab, arrow keys, Space and screen readers all work);
+   they are only made invisible. The <label> next to each one is what people see. */
+.pills input,
+.chips input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+}
+
+.pills {
+    display: flex;
+}
+
+.pills label {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.1rem;
+    padding: 0.2rem 0.15rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--ink);
+    cursor: pointer;
+    user-select: none;
+}
+
+.pills label + input + label {
+    margin-left: -1px;                 /* neighbours share one border */
+}
+
+.pills input:checked + label {
+    position: relative;
+    z-index: 1;
+    color: var(--paper);
+    background: var(--ink);
+    font-weight: 700;
+}
+
+.pills input:focus-visible + label {
+    position: relative;
+    z-index: 2;
+    outline-offset: 1px;
+}
+
+/* ---------- ledger ---------- */
+.ledger-key {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--muted);
+}
+
+.ledger-key i {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 0.45rem;
+}
+
+.key-limit {
+    width: 3px;
+    height: 1rem;
+    background: var(--ink);
+}
+
+.key-over {
+    width: 1.6rem;
+    height: 0.8rem;
+    border: 1px solid var(--ink);
+    background: repeating-linear-gradient(45deg, var(--mustard) 0 4px, var(--ink) 4px 8px);
+}
+
+.ledger-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.ledger-row {
+    position: relative;
+    isolation: isolate;                /* keeps the tint (::before, z-index -1) inside the row */
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem 1.25rem;
+    align-items: end;
+    padding: 1.1rem 0.5rem;
+    border-top: var(--hair) solid var(--ink);
+    transition: background-color 0.3s, padding-left 0.3s;
+}
+
+.ledger-row:last-of-type {
+    border-bottom: var(--hair) solid var(--ink);
+}
+
+.row-name {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+}
+
+.swatch {
+    flex-shrink: 0;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 50%;
+    background: var(--c);
+    border: 1px solid var(--ink);
+    transition: transform 0.3s;
+}
+
+.row-name h3 {
+    font-family: var(--serif);
+    font-size: clamp(1.14rem, 2.208vw, 1.564rem);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+}
+
+.share {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.row-meter {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    margin-top: 0.4rem;
+}
+
+/* Custom meter (a native <progress> cannot draw past its own maximum):
+   coloured fill   = money spent, up to the budget
+   hazard stripes  = money spent BEYOND the budget
+   black tick      = the budget limit
+   The scale always leaves 25% spare room after the limit, so overspending
+   visibly stretches the bar past the tick. */
+.meter {
+    position: relative;
+    flex: 1 1 12rem;
+    height: 1rem;
+    border: 1px solid var(--ink);
+    background: var(--surface);
+}
+
+.meter-fill,
+.meter-over {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transition: width 0.4s, left 0.4s;
+}
+
+.meter-fill {
+    left: 0;
+    width: var(--fill, 0%);
+    background: var(--c);
+}
+
+.meter-over {
+    left: var(--limit, 100%);
+    width: var(--over, 0%);
+    background: repeating-linear-gradient(45deg, var(--mustard) 0 6px, var(--ink-fixed) 6px 12px);
+}
+
+.meter-limit {
+    position: absolute;
+    top: -6px;
+    bottom: -6px;
+    left: var(--limit, 100%);
+    width: 3px;
+    margin-left: -1px;
+    background: var(--ink);
+    transition: left 0.4s;
+}
+
+/* DOMAIN CONTEXT "urgent: over budget". The row's own --is-over flag (0 or 1) is asked with
+   a style() container query. An overspent row gets a tint, a thick red edge and a text
+   badge, so the warning never depends on colour alone. */
+.ledger-row::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+}
+
+@container style(--is-over: 1) {
+    .ledger-row::before {
+        background: rgba(207, 69, 32, 0.09);
+        border-left: 6px solid var(--red);
+    }
+}
+
+.status {
+    min-width: 10rem;
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+}
+
+.st-ok {
+    display: block;
+    color: var(--teal-dark);
+}
+
+.st-bad {
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+    color: var(--red-text);
+    font-weight: 700;
+}
+
+.badge {
+    padding: 0.15rem 0.55rem;
+    background: var(--red);
+    color: var(--on-fill);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    animation: badge-pulse 2.4s ease-in-out infinite;
+}
+
+/* the status line shows "to spare" normally and the badge version when the row is over */
+@container style(--is-over: 1) {
+    .st-ok {
+        display: none;
+    }
+
+    .st-bad {
+        display: flex;
+    }
+}
+
+/* one-line verdict under the ledger: both sentences exist, the ENGINE picks one */
+.over-summary {
+    margin-top: 1.25rem;
+    padding: 0.6rem 0.9rem;
+    border: 2px solid var(--ink);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: rgba(31, 138, 112, 0.15);
+    color: var(--teal-dark);
+}
+
+.over-summary .sum-bad {
+    display: none;
+}
+
+@container style(--any-over: 1) {
+    .over-summary {
+        background: var(--red);
+        color: var(--on-fill);
+    }
+
+    .over-summary .sum-ok {
+        display: none;
+    }
+
+    .over-summary .sum-bad {
+        display: inline;
+    }
+}
+
+.ledger-total {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.ledger-total span.lbl {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.ledger-total strong {
+    font-family: var(--serif);
+    font-size: clamp(1.26rem, 2.46vw, 1.968rem);
+    letter-spacing: -0.03em;
+}
+
+.ledger-total .lbl-deficit {
+    display: none;
+}
+
+@container style(--deficit: 1) {
+    .ledger-total .lbl-left {
+        display: none;
+    }
+
+    .ledger-total .lbl-deficit {
+        display: block;
+    }
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+/* receipts: the transaction list reads like a till receipt */
+.receipts {
+    display: grid;
+    grid-template-columns: 5fr 7fr;
+    gap: clamp(1.6rem, 3.1vw, 3.1rem);
+    align-items: center;
+    margin-top: clamp(3.2rem, 5.58vw, 4.96rem);
+}
+
+.receipts-text h3 {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(1.7rem, 3.6vw, 2.88rem);
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+}
+
+.receipts-text h3 em {
+    font-weight: 400;
+    color: var(--red-text);
+}
+
+.receipts-text p {
+    max-width: 22rem;
+    margin-top: 1rem;
+    color: var(--muted);
+}
+
+.receipt {
+    position: relative;
+    max-width: 34rem;
+    margin-left: auto;
+    padding: 1.75rem 1.5rem 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--ink);
+    transform: rotate(1.5deg);
+    transition: transform 0.4s;
+    font-family: var(--mono);
+    font-size: 0.9rem;
+}
+
+/* zig-zag torn edge at the bottom of the receipt */
+.receipt::after {
+    content: "";
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    bottom: -12px;
+    height: 12px;
+    background:
+        linear-gradient(135deg, var(--surface) 25%, transparent 25%) -6px 0 / 12px 12px,
+        linear-gradient(225deg, var(--surface) 25%, transparent 25%) -6px 0 / 12px 12px;
+}
+
+.receipt-head {
+    padding-bottom: 0.75rem;
+    border-bottom: 2px dashed var(--ink);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.receipt li {
+    display: grid;
+    grid-template-columns: 4.2rem 1fr auto;
+    gap: 0.75rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px dashed rgba(var(--line-rgb), 0.4);
+}
+
+.receipt small {
+    display: block;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.receipt .in {
+    color: var(--teal-dark);
+    font-weight: 700;
+}
+
+.receipt .outgo {
+    color: var(--red-text);
+    font-weight: 700;
+}
+
+.receipt-foot {
+    margin-top: 0.9rem;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+}
+
+/* DOMAIN CONTEXT "empty": a list with nothing in it explains itself.
+   :empty matches only while the <ul> has no children, so adding the first <li>
+   makes the message disappear with no extra rule. */
+.alerts {
+    margin-top: 1.5rem;
+    padding: 0.8rem 1rem;
+    border: 2px dashed var(--ink);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+}
+
+.alerts::before {
+    content: "Payment alerts";
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--red-text);
+}
+
+.alerts:empty::after {
+    content: "\2713  No failed or pending payments this month.";
+    color: var(--teal-dark);
+}
+
+
+/* =====================================================
+   8. CHAPTER 03 - INVESTMENTS
+===================================================== */
+.portfolio-total {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 2rem;
+}
+
+.portfolio-total strong {
+    font-family: var(--serif);
+    font-size: clamp(2.55rem, 6.76vw, 5.72rem);
+    line-height: 0.9;
+    letter-spacing: -0.05em;
+}
+
+.gain-pill {
+    padding: 0.35rem 0.9rem;
+    background: var(--teal);
+    color: var(--on-fill);
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    transform: rotate(-3deg);
+    font-family: var(--mono);
+    font-size: clamp(0.76rem, 1.472vw, 0.92rem);
+    font-weight: 700;
+}
+
+/* the portfolio as one horizontal skyline, width = share */
+.alloc {
+    display: flex;
+    height: clamp(5.95rem, 12vw, 9rem);
+    margin-top: clamp(1.2rem, 2.48vw, 1.86rem);
+    border: 2px solid var(--ink);
+}
+
+.alloc > div {
+    flex: var(--w);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0.9rem clamp(0.5rem, 1.24vw, 0.62rem);
+    min-width: 0;
+    color: var(--on-fill);
+    transition: flex-grow 0.4s;
+}
+
+.alloc > div + div {
+    border-left: 2px solid var(--ink);
+}
+
+.alloc b {
+    font-family: var(--serif);
+    font-size: clamp(1.19rem, 3.6vw, 2.88rem);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    white-space: nowrap;          /* "21%" must never break onto two lines in a narrow segment */
+}
+
+.alloc .a-mf { background: var(--navy); color: var(--on-navy); }
+.alloc .a-st { background: var(--red); }
+.alloc .a-fd { background: var(--teal); }
+
+.holdings {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(1.2rem, 2.48vw, 2.17rem);
+    margin-top: clamp(1.6rem, 3.1vw, 2.48rem);
+}
+
+/* staggered columns so the row isn't a flat line */
+.holding:nth-child(2) {
+    margin-top: 3.5rem;
+}
+
+.holding:nth-child(3) {
+    margin-top: 1.5rem;
+}
+
+.holding {
+    padding-top: 1rem;
+    border-top: 4px solid var(--ink);
+    transition: border-color 0.3s, transform 0.3s;
+}
+
+.holding .idx {
+    color: var(--red-text);
+}
+
+.holding h3 {
+    margin: 0.3rem 0 0.2rem;
+    font-family: var(--serif);
+    font-size: clamp(1.44rem, 2.46vw, 1.968rem);
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.holding .tagline {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--teal-dark);
+}
+
+/* a status label written by CSS: any holding that contains a ".up" figure says so in words */
+.holding:has(.up) .tagline::after {
+    content: "\00a0/ positive return";
+    font: normal 0.7rem var(--mono);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.holding .desc {
+    margin: 0.75rem 0 1rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.holding dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    border-top: var(--hair) solid rgba(var(--line-rgb), 0.25);
+    font-size: 0.95rem;
+}
+
+.holding dt {
+    color: var(--muted);
+}
+
+.holding dd {
+    font-family: var(--mono);
+    font-weight: 700;
+}
+
+.holding dd.up {
+    color: var(--teal-dark);
+}
+
+/* risk meter made of five CSS dots (filled count, not colour, carries the meaning) */
+.dots {
+    display: inline-flex;
+    gap: 5px;
+}
+
+.dots i {
+    width: 0.8rem;
+    height: 0.8rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 50%;
+}
+
+.risk-1 i:nth-child(-n+1),
+.risk-3 i:nth-child(-n+3),
+.risk-5 i:nth-child(-n+5) {
+    background: var(--ink);
+}
+
+/* ---------- media: picture + video + captions ---------- */
+.market-media {
+    display: grid;
+    grid-template-columns: 0.8fr 1.2fr;
+    gap: 1.5rem;
+    margin-top: clamp(2.4rem, 4.34vw, 3.72rem);
+    align-items: start;
+}
+
+.market-copy,
+.market-figure,
+.market-video {
+    min-width: 0;
+}
+
+.market-copy h3 {
+    font: 700 clamp(1.53rem, 2.88vw, 2.16rem)/1.05 var(--serif);
+    margin: 0.7rem 0;
+}
+
+.market-copy .eyebrow {
+    color: var(--red-text);
+}
+
+.market-copy p:not(.eyebrow) {
+    color: var(--muted);
+}
+
+.market-figure,
+.market-video {
+    background: var(--surface);
+    border: 1px solid var(--ink);
+    padding: 0.8rem;
+}
+
+.market-figure img,
+.market-video video {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.market-video {
+    grid-column: 2;
+}
+
+.market-video video {
+    aspect-ratio: 16 / 9;
+    background: var(--navy);
+}
+
+.market-figure figcaption,
+.market-video figcaption {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+/* risk note: native <details>; its first letter is dropped-cap as a visual "read me" flag */
+.risk-note {
+    margin-top: 1.2rem;
+    border: 1px solid var(--ink);
+    background: var(--surface);
+}
+
+.risk-note summary {
+    padding: 0.7rem 0.9rem;
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.risk-note[open] {
+    border: 2px solid var(--red);
+}
+
+.risk-note p {
+    margin: 0;
+    padding: 0.8rem 0.9rem 1rem;
+    background: var(--paper-2);
+    color: var(--ink);
+}
+
+.risk-note p::first-letter {
+    color: var(--red-text);
+    font-size: 1.6em;
+    font-weight: 700;
+}
+
+/* Caption styling (::cue). Chrome applies these to the cues of the <video> they match.
+   Two voices (Narrator, Advisor) and two classes (.key, .warn) come from the .vtt file. */
+video::cue {
+    background: rgba(12, 20, 36, 0.9);
+    color: #fffdf7;
+    font: 1.05rem/1.35 "Helvetica Neue", Arial, sans-serif;
+}
+
+video::cue(v[voice="Narrator"]) {
+    background: #0f1b2d;
+    color: #ffe9a8;
+}
+
+video::cue(v[voice="Advisor"]) {
+    background: #0b3b2f;
+    color: #c9fbe9;
+}
+
+video::cue(.key) {
+    font-style: italic;
+    text-decoration: underline;
+}
+
+video::cue(.warn) {
+    color: #ffc4b3;
+    font-weight: 700;
+}
+
+/* transcript: the same two voices as text, for anyone who prefers reading */
+.transcript {
+    margin-top: 0.75rem;
+    border-top: 1px solid var(--ink);
+    font-size: 0.9rem;
+}
+
+.transcript summary {
+    padding: 0.6rem 0;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.transcript dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.35rem 0.9rem;
+}
+
+.transcript dt {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding-top: 0.2em;
+}
+
+.transcript dd {
+    padding-bottom: 0.25rem;
+}
+
+.transcript dt.narrator { color: var(--red-text); }
+.transcript dt.advisor  { color: var(--teal-dark); }
+
+/* timeline of milestones */
+.timeline-wrap {
+    margin-top: clamp(3.2rem, 5.58vw, 4.96rem);
+}
+
+.timeline {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+}
+
+.timeline::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0.45rem;
+    border-top: 2px dashed var(--ink);
+}
+
+.timeline li {
+    position: relative;
+    padding-top: 2rem;
+}
+
+.timeline li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1rem;
+    height: 1rem;
+    background: var(--paper);
+    border: 3px solid var(--ink);
+    border-radius: 50%;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.timeline li:last-child::before {
+    background: var(--red);
+    transform: scale(1.3);
+}
+
+.timeline strong {
+    display: block;
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    line-height: 1.2;
+}
+
+.timeline p {
+    font-size: 0.92rem;
+    color: var(--muted);
+}
+
+
+/* =====================================================
+   9. CHAPTER 04 - CALCULATOR (dark section)
+===================================================== */
+.calc-section {
+    position: relative;
+    overflow: hidden;
+    padding-block: var(--section-space);
+    background-color: var(--navy);
+    background-image: none;
+    color: var(--on-navy);
+    --focus: var(--mustard);           /* red would be too dim on navy */
+}
+
+.calc-section .chapter-num {
+    -webkit-text-stroke-color: var(--on-navy);
+    opacity: 0.25;
+}
+
+.calc-section .chapter-head .eyebrow {
+    color: var(--mustard);
+}
+
+.calc-section .chapter-head h2 em {
+    color: var(--mustard);
+}
+
+.calc-section .chapter-head .lede {
+    color: var(--on-navy-soft);
+}
+
+.calc-layout {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    align-items: start;
+}
+
+/* the form is a paper card that overlaps the forecast */
+.calc-form {
+    grid-column: 1 / span 5;
+    grid-row: 1;
+    position: relative;
+    z-index: 2;
+    padding: clamp(1rem, 1.86vw, 1.395rem);
+    background: var(--paper);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    box-shadow: 10px 10px 0 var(--teal);
+    --focus: var(--red);
+    counter-reset: step;               /* numbers the four steps: "Step 1 / 4" ... */
+}
+
+.calc-form h3 {
+    font-family: var(--serif);
+    font-size: 1.8rem;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.25rem;
+}
+
+.calc-form .formula {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.75rem;
+    margin-bottom: 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.step {
+    margin-bottom: 1.1rem;
+}
+
+.step legend {
+    margin-bottom: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+}
+
+.step legend::before {
+    counter-increment: step;
+    content: "Step " counter(step) " / 4  \2014\00a0";
+    color: var(--red-text);
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.chips label,
+.chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.8rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.chips input:checked + label {
+    background: var(--ink);
+    color: var(--paper);
+    font-weight: 700;
+}
+
+/* C1 "a choice made earlier changes what appears later":
+   when a share-based return (12% / 15%) is picked in step 2, the very short horizons in
+   step 3 are flagged with a warning mark. */
+.calc-layout:has(:is(#rt-3, #rt-4):checked) label:is([for="yr-0"], [for="yr-1"])::after {
+    content: "\00a0\26A0";
+    color: var(--red-text);
+}
+
+.button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.btn {
+    padding: 0.8rem 1.4rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--paper);
+    background: var(--ink);
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    transition: background-color 0.25s, color 0.25s;
+}
+
+.btn.secondary {
+    color: var(--ink);
+    background: transparent;
+}
+
+.forecast {
+    grid-column: 5 / span 8;
+    grid-row: 1;
+    padding: clamp(1rem, 1.86vw, 1.55rem);
+    /* the form card covers exactly one of the 12 columns (12.5% of this 8-column box) plus its 10px shadow */
+    padding-left: calc(12.5% + 10px + clamp(1rem, 1.86vw, 1.55rem));
+    margin-top: clamp(1.6rem, 3.72vw, 3.1rem);
+    border: 2px solid var(--on-navy);
+}
+
+.plain {
+    font-family: var(--serif);
+    font-size: clamp(1.26rem, 2.46vw, 1.968rem);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+}
+
+.plain strong {
+    color: var(--mustard);
+    font-style: italic;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(239, 232, 216, 0.4);
+}
+
+.stats dt {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--on-navy-soft);
+}
+
+.stats dd {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(1.14rem, 2.208vw, 1.748rem);
+    letter-spacing: -0.02em;
+}
+
+/* advice notes: each one exists in the HTML and is revealed by the choices made above */
+.notes {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+}
+
+.notes li {
+    display: none;
+    padding: 0.6rem 0.9rem;
+    background: rgba(226, 169, 59, 0.14);
+    border-left: 5px solid var(--mustard);
+    font-size: 0.95rem;
+}
+
+.notes li::marker {
+    content: "";
+}
+
+.notes li::before {
+    content: "\26A0\00a0";
+    color: var(--mustard);
+    font-weight: 700;
+}
+
+.calc-layout:has(:is(#rt-3, #rt-4):checked):has(:is(#yr-0, #yr-1):checked) .note-short,
+.calc-layout:has(:is(#rt-0, #rt-1):checked):has(:is(#yr-5, #yr-6):checked) .note-fd,
+.calc-layout:has(#rt-4:checked) .note-stretch {
+    display: block;
+}
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.chart-legend span::before {
+    content: "";
+    display: inline-block;
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-right: 0.5rem;
+    vertical-align: -1px;
+    border: 1px solid var(--on-navy);
+}
+
+.chart-legend .l-base::before   { background: var(--on-navy); }
+.chart-legend .l-growth::before { background: var(--mustard); }
+.chart-legend .mult::before     { display: none; }
+
+.growth-chart {
+    display: flex;
+    align-items: flex-end;
+    height: 190px;
+    margin-top: 1.6rem;
+    border-bottom: 2px solid var(--on-navy);
+}
+
+/* One bar per year (30 in the HTML). The ENGINE gives each bar its own height and
+   switches off every bar beyond the chosen number of years. */
+.bar {
+    position: relative;
+    display: flex;
+    flex-direction: column-reverse;
+    min-width: 0;
+    flex-grow: var(--vis);
+    flex-shrink: 1;
+    flex-basis: 0;
+    padding-inline: calc(var(--vis) * 1.5px);
+    height: min(100%, calc(var(--val) / var(--fv) * 100%));
+    transition: height 0.4s, flex-grow 0.4s;
+    transform-origin: bottom;
+    animation: rise 0.6s ease-out both;
+    animation-delay: calc(var(--i) * 25ms);
+}
+
+.bar-base {
+    display: block;
+    height: calc(var(--P) / var(--val) * 100%);
+    background: var(--on-navy);
+}
+
+.bar-growth {
+    display: block;
+    height: calc((1 - var(--P) / var(--val)) * 100%);
+    background: var(--mustard);
+    transition: background-color 0.2s;
+}
+
+/* the value label of a bar: "Year 7 - Rs 4.57 L". Hidden until asked for (see CONTEXTS). */
+.bar::after {
+    content: "Year " counter(by) "  \B7  \20B9" counter(bl) "." counter(bd, decimal-leading-zero) " L";
+    counter-set: by var(--i) bl var(--bl) bd var(--bd);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    z-index: 5;
+    transform: translateX(-50%);
+    margin-bottom: 4px;
+    padding: 0.15rem 0.4rem;
+    background: var(--on-navy);
+    color: var(--ink-fixed);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    white-space: nowrap;
+    visibility: hidden;
+}
+
+.axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.4rem;
+    color: var(--on-navy-soft);
+}
+
+/* ---------- glossary popover (native popover attribute; no script) ---------- */
+.gloss {
+    width: min(34rem, calc(100vw - 2rem));
+    padding: 1.5rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 2px solid var(--ink);
+    box-shadow: 10px 10px 0 var(--teal);
+}
+
+.gloss h4 {
+    margin-bottom: 0.75rem;
+    font-family: var(--serif);
+    font-size: 1.6rem;
+    letter-spacing: -0.02em;
+}
+
+.gloss dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.4rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.gloss dt {
+    font-family: var(--mono);
+    font-weight: 700;
+    color: var(--red-text);
+}
+
+.gloss::backdrop {
+    background: rgba(12, 20, 36, 0.65);
+}
+
+
+/* =====================================================
+   10. FOOTER - the closing page
+===================================================== */
+.footer {
+    position: relative;
+    overflow: hidden;
+    padding-block: var(--section-space) clamp(1.2rem, 2.48vw, 1.86rem);
+    background-color: #0a4a3a;
+    color: var(--on-fill);
+    --focus: var(--mustard);
+}
+
+.footer .eyebrow {
+    margin-bottom: 1rem;
+}
+
+.footer-title {
+    max-width: 16ch;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(2.184rem, 5.58vw, 4.96rem);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+}
+
+.footer-title em {
+    font-weight: 400;
+    color: var(--mustard);
+}
+
+.footer-cols {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: clamp(2rem, 3.72vw, 3.1rem);
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--on-fill);
+}
+
+.footer-cols h3 {
+    margin-bottom: 0.75rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.footer-cols li {
+    margin-bottom: 0.3rem;
+}
+
+/* ::marker restyles the list bullet itself; "fine print" items get a section sign */
+.fine-print {
+    list-style: disc;
+    padding-left: 1.25rem;
+}
+
+.fine-print li::marker {
+    content: "\00a7\00a0";
+    color: var(--mustard);
+    font-weight: 700;
+}
+
+.footer-cols a {
+    text-decoration: none;
+    background: linear-gradient(var(--on-fill), var(--on-fill)) left bottom / 0% 2px no-repeat;
+    transition: background-size 0.3s;
+}
+
+.back-top {
+    display: inline-block;
+    margin-top: 2rem;
+}
+
+/* The closing wordmark uses the same sizing system as the hero, so the whole word
+   is always visible. It sits on a rule like a signature at the end of the page. */
+.footer .wordmark-box {
+    margin-top: clamp(1.6rem, 3.72vw, 2.79rem);
+    padding-top: clamp(0.75rem, 1.24vw, 0.93rem);
+    border-top: 3px solid var(--on-fill);
+}
+
+.footer .wm-fin {
+    color: var(--on-fill);
+}
+
+.footer .wm-track {
+    color: var(--mustard);
+}
+
+.footer .wm-reg {
+    color: var(--on-fill);
+}
+
+
+/* =====================================================
+   11. THE ENGINE - how CSS does the maths with no script
+   Three steps, always in this order:
+     STATE    a ticked radio button is the only thing the visitor changes
+              (:has() on an ancestor reads it and sets a number)
+     NUMBERS  calc(), pow(), min(), max(), round() turn those numbers into results
+     TEXT     CSS counters + ::before / ::after print the results as words and rupees
+   Where the state lives matters: custom properties only flow DOWN the tree, so the state
+   is set on the smallest ancestor that contains every element that reads it.
+     <body>        the ledger  (the nav badge, the phone strip and the print statement read it too)
+     .calc-layout  the calculator (form on the left, forecast on the right)
+===================================================== */
+
+/* ---------- 11a. Rupee formatter: <span class="inr" style="--n: 235000"> ----------
+   The value is cut into Indian digit groups (crore, lakh, thousand, hundreds) with
+   mod() and round(). Four empty <i> elements print one group each; a group is only
+   shown when the number is big enough, which a style() query decides.
+   Without style() support the number still shows, just without commas. */
+.inr {
+    --cr: round(down, (var(--nh) * 1000 + round(var(--n), 1)) / 10000000, 1);
+    --la: mod(round(down, (var(--nh) * 1000 + round(var(--n), 1)) / 100000, 1), 100);
+    --th: mod(round(down, (var(--nh) * 1000 + round(var(--n), 1)) / 1000, 1), 100);
+    --hu: mod(round(down, (var(--nh) * 1000 + round(var(--n), 1)) / 100, 1), 10);
+    --te: mod((var(--nh) * 1000 + round(var(--n), 1)), 100);
+    --lt: mod((var(--nh) * 1000 + round(var(--n), 1)), 1000);
+    --f7: min(1, var(--cr));
+    --f5: min(1, round(down, (var(--nh) * 1000 + round(var(--n), 1)) / 100000, 1));
+    --f3: min(1, round(down, (var(--nh) * 1000 + round(var(--n), 1)) / 1000, 1));
+    counter-set: cr var(--cr) la var(--la) th var(--th) hu var(--hu) te var(--te) lt var(--lt);
+    white-space: nowrap;
+}
+
+.inr::before {
+    content: "\20B9";
+}
+
+.inr > i {
+    display: none;
+}
+
+.inr > .c0 {
+    display: inline;
+}
+
+.inr > .c0::before { content: counter(lt); }
+.inr > .c3::before { content: counter(th) ","; }
+.inr > .c5::before { content: counter(la) ","; }
+.inr > .c7::before { content: counter(cr) ","; }
+
+@container style(--f3: 1) {
+    .inr > .c3 { display: inline; }
+    .inr > .c0::before { content: counter(hu) counter(te, decimal-leading-zero); }
+}
+
+@container style(--f5: 1) {
+    .inr > .c5 { display: inline; }
+    .inr > .c3::before { content: counter(th, decimal-leading-zero) ","; }
+}
+
+@container style(--f7: 1) {
+    .inr > .c7 { display: inline; }
+    .inr > .c5::before { content: counter(la, decimal-leading-zero) ","; }
+}
+
+/* ---------- 11b. Small formatters ---------- */
+/* percentage: 6.5 -> "6.5%", 10 -> "10%" */
+.rate {
+    --ri: round(down, var(--r), 1);
+    --rd: round(mod(var(--r), 1) * 10, 1);
+    --fd: min(1, var(--rd));
+    counter-set: ri var(--ri) rd var(--rd);
+}
+
+.rate::before { content: counter(ri); }
+.rate::after  { content: "%"; }
+
+@container style(--fd: 1) {
+    .rate::after { content: "." counter(rd) "%"; }
+}
+
+/* years: "1 year" / "10 years" */
+.yrs {
+    --yone: max(0, calc(1 - (var(--t) - 1) * (var(--t) - 1)));
+    counter-set: yy var(--t);
+}
+
+.yrs::before { content: counter(yy); }
+.yrs::after  { content: "\00a0years"; }
+
+@container style(--yone: 1) {
+    .yrs::after { content: "\00a0year"; }
+}
+
+.axis-end {
+    counter-set: yy var(--t);
+}
+
+.axis-end::after { content: "Year " counter(yy); }
+
+/* growth multiple: "2.59x your money" */
+.mult {
+    --mm: round(var(--mult) * 100, 1);
+    --mi: round(down, var(--mm) / 100, 1);
+    --md: mod(var(--mm), 100);
+    counter-set: mi var(--mi) md var(--md);
+}
+
+.mult::after { content: counter(mi) "." counter(md, decimal-leading-zero) "x your money"; }
+
+/* share of spending: "37%" */
+.share {
+    counter-set: sh var(--sh);
+}
+
+.share::before { content: counter(sh) "%"; }
+
+/* ---------- 11c. LEDGER state: 14 radio groups -> 14 numbers on <body> ----------
+   --k1 ... --k7  which "Spent" amount is ticked (0-4)   --j1 ... --j7  which "Budget" amount (0-4)
+   The defaults below are the original page's figures (the middle choice of each group).  */
+body {
+
+    --k1: 2; --j1: 2;
+    --k2: 2; --j2: 2;
+    --k3: 2; --j3: 2;
+    --k4: 2; --j4: 2;
+    --k5: 2; --j5: 2;
+    --k6: 2; --j6: 2;
+    --k7: 2; --j7: 2;
+
+    /* budget and spent amount of each category: start value + choice x step */
+    --B1: calc(10000 + var(--j1) * 1000);   --S1: calc(10000 + var(--k1) * 1000);   --O1: max(0, var(--S1) - var(--B1));
+    --B2: calc(5000 + var(--j2) * 500);   --S2: calc(4800 + var(--k2) * 400);   --O2: max(0, var(--S2) - var(--B2));
+    --B3: calc(3000 + var(--j3) * 500);   --S3: calc(3500 + var(--k3) * 500);   --O3: max(0, var(--S3) - var(--B3));
+    --B4: calc(2000 + var(--j4) * 500);   --S4: calc(2400 + var(--k4) * 400);   --O4: max(0, var(--S4) - var(--B4));
+    --B5: calc(2000 + var(--j5) * 500);   --S5: calc(2100 + var(--k5) * 300);   --O5: max(0, var(--S5) - var(--B5));
+    --B6: calc(1500 + var(--j6) * 500);   --S6: calc(2000 + var(--k6) * 200);   --O6: max(0, var(--S6) - var(--B6));
+    --B7: calc(1000 + var(--j7) * 500);   --S7: calc(1600 + var(--k7) * 200);   --O7: max(0, var(--S7) - var(--B7));
+
+    /* totals */
+    --TS: calc(var(--S1) + var(--S2) + var(--S3) + var(--S4) + var(--S5) + var(--S6) + var(--S7));
+    --TB: calc(var(--B1) + var(--B2) + var(--B3) + var(--B4) + var(--B5) + var(--B6) + var(--B7));
+    --left: calc(var(--TB) - var(--TS));
+    --left-abs: abs(var(--left));
+    --deficit: max(0, min(1, var(--TS) - var(--TB)));
+    --over-total: calc(var(--O1) + var(--O2) + var(--O3) + var(--O4) + var(--O5) + var(--O6) + var(--O7));
+    --over-count: calc(min(1, var(--O1)) + min(1, var(--O2)) + min(1, var(--O3)) + min(1, var(--O4)) + min(1, var(--O5)) + min(1, var(--O6)) + min(1, var(--O7)));
+    --any-over: min(1, var(--over-count));
+    --one-over: max(0, calc(1 - (var(--over-count) - 1) * (var(--over-count) - 1)));
+
+    /* each category's share of spending, and where its donut slice ends (cumulative %) */
+    --sh1: round(var(--S1) / var(--TS) * 100, 1);   --p1: calc((var(--S1)) / var(--TS) * 100);
+    --sh2: round(var(--S2) / var(--TS) * 100, 1);   --p2: calc((var(--S1) + var(--S2)) / var(--TS) * 100);
+    --sh3: round(var(--S3) / var(--TS) * 100, 1);   --p3: calc((var(--S1) + var(--S2) + var(--S3)) / var(--TS) * 100);
+    --sh4: round(var(--S4) / var(--TS) * 100, 1);   --p4: calc((var(--S1) + var(--S2) + var(--S3) + var(--S4)) / var(--TS) * 100);
+    --sh5: round(var(--S5) / var(--TS) * 100, 1);   --p5: calc((var(--S1) + var(--S2) + var(--S3) + var(--S4) + var(--S5)) / var(--TS) * 100);
+    --sh6: round(var(--S6) / var(--TS) * 100, 1);   --p6: calc((var(--S1) + var(--S2) + var(--S3) + var(--S4) + var(--S5) + var(--S6)) / var(--TS) * 100);
+    --sh7: round(var(--S7) / var(--TS) * 100, 1);   --p7: calc((var(--S1) + var(--S2) + var(--S3) + var(--S4) + var(--S5) + var(--S6) + var(--S7)) / var(--TS) * 100);
+
+    /* which category is biggest? --ism = 1 if it equals the maximum; --big = first such category */
+    --mx: max(var(--S1), var(--S2), var(--S3), var(--S4), var(--S5), var(--S6), var(--S7));
+    --ism1: max(0, calc(1 - (var(--mx) - var(--S1))));
+    --ism2: max(0, calc(1 - (var(--mx) - var(--S2))));
+    --ism3: max(0, calc(1 - (var(--mx) - var(--S3))));
+    --ism4: max(0, calc(1 - (var(--mx) - var(--S4))));
+    --ism5: max(0, calc(1 - (var(--mx) - var(--S5))));
+    --ism6: max(0, calc(1 - (var(--mx) - var(--S6))));
+    --ism7: max(0, calc(1 - (var(--mx) - var(--S7))));
+    --big1: calc(var(--ism1));
+    --big2: calc(var(--ism2) * (1 - var(--ism1)));
+    --big3: calc(var(--ism3) * (1 - var(--ism1)) * (1 - var(--ism2)));
+    --big4: calc(var(--ism4) * (1 - var(--ism1)) * (1 - var(--ism2)) * (1 - var(--ism3)));
+    --big5: calc(var(--ism5) * (1 - var(--ism1)) * (1 - var(--ism2)) * (1 - var(--ism3)) * (1 - var(--ism4)));
+    --big6: calc(var(--ism6) * (1 - var(--ism1)) * (1 - var(--ism2)) * (1 - var(--ism3)) * (1 - var(--ism4)) * (1 - var(--ism5)));
+    --big7: calc(var(--ism7) * (1 - var(--ism1)) * (1 - var(--ism2)) * (1 - var(--ism3)) * (1 - var(--ism4)) * (1 - var(--ism5)) * (1 - var(--ism6)));
+}
+
+/* One rule per radio button: when it is :checked, <body> records its position. */
+body:has(#s1-0:checked) { --k1: 0; }
+body:has(#s1-1:checked) { --k1: 1; }
+body:has(#s1-2:checked) { --k1: 2; }
+body:has(#s1-3:checked) { --k1: 3; }
+body:has(#s1-4:checked) { --k1: 4; }
+body:has(#b1-0:checked) { --j1: 0; }
+body:has(#b1-1:checked) { --j1: 1; }
+body:has(#b1-2:checked) { --j1: 2; }
+body:has(#b1-3:checked) { --j1: 3; }
+body:has(#b1-4:checked) { --j1: 4; }
+body:has(#s2-0:checked) { --k2: 0; }
+body:has(#s2-1:checked) { --k2: 1; }
+body:has(#s2-2:checked) { --k2: 2; }
+body:has(#s2-3:checked) { --k2: 3; }
+body:has(#s2-4:checked) { --k2: 4; }
+body:has(#b2-0:checked) { --j2: 0; }
+body:has(#b2-1:checked) { --j2: 1; }
+body:has(#b2-2:checked) { --j2: 2; }
+body:has(#b2-3:checked) { --j2: 3; }
+body:has(#b2-4:checked) { --j2: 4; }
+body:has(#s3-0:checked) { --k3: 0; }
+body:has(#s3-1:checked) { --k3: 1; }
+body:has(#s3-2:checked) { --k3: 2; }
+body:has(#s3-3:checked) { --k3: 3; }
+body:has(#s3-4:checked) { --k3: 4; }
+body:has(#b3-0:checked) { --j3: 0; }
+body:has(#b3-1:checked) { --j3: 1; }
+body:has(#b3-2:checked) { --j3: 2; }
+body:has(#b3-3:checked) { --j3: 3; }
+body:has(#b3-4:checked) { --j3: 4; }
+body:has(#s4-0:checked) { --k4: 0; }
+body:has(#s4-1:checked) { --k4: 1; }
+body:has(#s4-2:checked) { --k4: 2; }
+body:has(#s4-3:checked) { --k4: 3; }
+body:has(#s4-4:checked) { --k4: 4; }
+body:has(#b4-0:checked) { --j4: 0; }
+body:has(#b4-1:checked) { --j4: 1; }
+body:has(#b4-2:checked) { --j4: 2; }
+body:has(#b4-3:checked) { --j4: 3; }
+body:has(#b4-4:checked) { --j4: 4; }
+body:has(#s5-0:checked) { --k5: 0; }
+body:has(#s5-1:checked) { --k5: 1; }
+body:has(#s5-2:checked) { --k5: 2; }
+body:has(#s5-3:checked) { --k5: 3; }
+body:has(#s5-4:checked) { --k5: 4; }
+body:has(#b5-0:checked) { --j5: 0; }
+body:has(#b5-1:checked) { --j5: 1; }
+body:has(#b5-2:checked) { --j5: 2; }
+body:has(#b5-3:checked) { --j5: 3; }
+body:has(#b5-4:checked) { --j5: 4; }
+body:has(#s6-0:checked) { --k6: 0; }
+body:has(#s6-1:checked) { --k6: 1; }
+body:has(#s6-2:checked) { --k6: 2; }
+body:has(#s6-3:checked) { --k6: 3; }
+body:has(#s6-4:checked) { --k6: 4; }
+body:has(#b6-0:checked) { --j6: 0; }
+body:has(#b6-1:checked) { --j6: 1; }
+body:has(#b6-2:checked) { --j6: 2; }
+body:has(#b6-3:checked) { --j6: 3; }
+body:has(#b6-4:checked) { --j6: 4; }
+body:has(#s7-0:checked) { --k7: 0; }
+body:has(#s7-1:checked) { --k7: 1; }
+body:has(#s7-2:checked) { --k7: 2; }
+body:has(#s7-3:checked) { --k7: 3; }
+body:has(#s7-4:checked) { --k7: 4; }
+body:has(#b7-0:checked) { --j7: 0; }
+body:has(#b7-1:checked) { --j7: 1; }
+body:has(#b7-2:checked) { --j7: 2; }
+body:has(#b7-3:checked) { --j7: 3; }
+body:has(#b7-4:checked) { --j7: 4; }
+
+/* ---------- 11d. LEDGER rows ----------
+   Each <li> maps its own --B, --S, --O, --sh from the numbered <body> variables (inline style).
+   From there every row is calculated the same way. */
+.ledger-row {
+    --spare: max(0, var(--B) - var(--S));
+    --is-over: min(1, var(--O));                                    /* 1 = over budget */
+    --scale: max(var(--B) * 1.25, var(--S), 1);                     /* meter always shows 25% spare room */
+    --limit: calc(var(--B) / var(--scale) * 100%);
+    --fill: calc(min(var(--S), var(--B)) / var(--scale) * 100%);
+    --over: calc(var(--O) / var(--scale) * 100%);
+}
+
+/* ---------- 11e. Page-level reads of the ledger state ---------- */
+.nav-link[href="#spending"] {
+    counter-set: oc var(--over-count);
+}
+
+@container style(--any-over: 1) {
+    .nav-link[href="#spending"]::after {
+        content: "\00a0\25B2" counter(oc);
+        color: var(--red-text);
+    }
+}
+
+.oc {
+    counter-set: oc var(--over-count);
+}
+
+.oc::before {
+    content: counter(oc);
+}
+
+/* "1 category is" / "3 categories are" */
+.sum-bad .one { display: none; }
+@container style(--one-over: 1) {
+    .sum-bad .one  { display: inline; }
+    .sum-bad .many { display: none; }
+}
+
+/* name of the biggest slice */
+@container style(--big1: 1) { .donut-note .big1 { display: inline; } }
+@container style(--big2: 1) { .donut-note .big2 { display: inline; } }
+@container style(--big3: 1) { .donut-note .big3 { display: inline; } }
+@container style(--big4: 1) { .donut-note .big4 { display: inline; } }
+@container style(--big5: 1) { .donut-note .big5 { display: inline; } }
+@container style(--big6: 1) { .donut-note .big6 { display: inline; } }
+@container style(--big7: 1) { .donut-note .big7 { display: inline; } }
+
+/* ---------- 11f. CALCULATOR state ----------
+   Amount (P), yearly return (r, in %), years (t) and compounding times per year (n) are
+   read from the four radio groups. A = P x (1 + r/n) ^ (n x t) is one calc() with pow(). */
+.calc-layout {
+    --P: 235000;
+    --r: 10;
+    --t: 10;
+    --cmp: 1;
+    --fv: calc(var(--P) * pow(1 + var(--r) / 100 / var(--cmp), var(--cmp) * var(--t)));
+    --gain: calc(var(--fv) - var(--P));
+    /* a number of 7+ digits loses its last digits when it is passed on through var() (browsers print it as 1.55292e+06),
+       so the rupee formatter is fed in two exact halves: thousands (--fvh) and the rest (--fvr), each worked out from the formula itself */
+    --fvh:  calc(round(down, var(--P) * pow(1 + var(--r) / 100 / var(--cmp), var(--cmp) * var(--t)) / 1000, 1));
+    --fvr:  calc(var(--P) * pow(1 + var(--r) / 100 / var(--cmp), var(--cmp) * var(--t)) - var(--fvh) * 1000);
+    --gnh:  calc(round(down, (var(--P) * pow(1 + var(--r) / 100 / var(--cmp), var(--cmp) * var(--t)) - var(--P)) / 1000, 1));
+    --gnr:  calc(var(--P) * pow(1 + var(--r) / 100 / var(--cmp), var(--cmp) * var(--t)) - var(--P) - var(--gnh) * 1000);
+    --mult: calc(var(--fv) / var(--P));
+}
+
+.calc-layout:has(#amt-0:checked) { --P: 25000; }
+.calc-layout:has(#amt-1:checked) { --P: 50000; }
+.calc-layout:has(#amt-2:checked) { --P: 100000; }
+.calc-layout:has(#amt-3:checked) { --P: 235000; }
+.calc-layout:has(#amt-4:checked) { --P: 500000; }
+.calc-layout:has(#amt-5:checked) { --P: 1000000; }
+.calc-layout:has(#rt-0:checked) { --r: 4; }
+.calc-layout:has(#rt-1:checked) { --r: 6.5; }
+.calc-layout:has(#rt-2:checked) { --r: 10; }
+.calc-layout:has(#rt-3:checked) { --r: 12; }
+.calc-layout:has(#rt-4:checked) { --r: 15; }
+.calc-layout:has(#yr-0:checked) { --t: 1; }
+.calc-layout:has(#yr-1:checked) { --t: 3; }
+.calc-layout:has(#yr-2:checked) { --t: 5; }
+.calc-layout:has(#yr-3:checked) { --t: 10; }
+.calc-layout:has(#yr-4:checked) { --t: 15; }
+.calc-layout:has(#yr-5:checked) { --t: 20; }
+.calc-layout:has(#yr-6:checked) { --t: 30; }
+.calc-layout:has(#cp-0:checked) { --cmp: 1; }
+.calc-layout:has(#cp-1:checked) { --cmp: 2; }
+.calc-layout:has(#cp-2:checked) { --cmp: 4; }
+.calc-layout:has(#cp-3:checked) { --cmp: 12; }
+
+/* Every bar works out its own year's value. --vis is 1 for years up to the chosen horizon
+   and 0 after it; a bar with --vis 0 has no width, so it simply is not there. */
+.bar {
+    --vis: clamp(0, calc(var(--t) - var(--i) + 1), 1);
+    --is-last: max(0, calc(1 - abs(var(--t) - var(--i))));
+    --val: calc(var(--P) * pow(1 + var(--r) / 100 / var(--cmp), var(--cmp) * var(--i)));
+    --bh: round(var(--val) / 1000, 1);
+    --bl: round(down, var(--bh) / 100, 1);
+    --bd: mod(var(--bh), 100);
+}
+
+
+/* =====================================================
+   12. CONTEXTS
+   Every @media query on the page lives here, grouped by the
+   user situation it serves. The README has the matching row
+   of the context matrix for each block (C1 ... C10).
+===================================================== */
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes bob {
+    50% { transform: translateY(6px); }
+}
+
+@keyframes scroll-left {
+    to { transform: translateX(-50%); }
+}
+
+@keyframes rise {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+}
+
+@keyframes badge-pulse {
+    50% { box-shadow: 0 0 0 6px rgba(207, 69, 32, 0.3); }
+}
+
+
+/* ---------------------------------------------------------------
+   INPUT / C3  A mouse user: hover and a fine pointer.
+   Hover effects live ONLY here. On a touch screen a hover state "sticks"
+   after a tap, so touch users never get them.
+---------------------------------------------------------------- */
+@media (hover: hover) and (pointer: fine) {
+    .topbar a.nav-link:hover,
+    .footer-cols a:hover {
+        background-size: 100% 2px;
+    }
+
+    .sticker:hover {
+        transform: rotate(3deg) scale(1.08);
+    }
+
+    .flow-bar div:hover {
+        flex-grow: calc(var(--w) + 15);
+    }
+
+    .numbers > div:hover dd.big {
+        color: var(--teal-dark);
+    }
+
+    .numbers > div.is-spend:hover dd.big {
+        color: var(--red-text);
+    }
+
+    .col:hover i {
+        background: var(--teal);
+        transform: scaleX(1.06);
+    }
+
+    .ledger-row:hover {
+        background-color: var(--paper);
+        padding-left: 1.1rem;
+    }
+
+    .ledger-row:hover .swatch {
+        transform: scale(1.6);
+    }
+
+    .pills label:hover,
+    .chips label:hover,
+    .chip:hover {
+        background: var(--ink);
+        color: var(--paper);
+    }
+
+    .receipt:hover {
+        transform: rotate(0deg) translateY(-4px);
+    }
+
+    .alloc > div:hover {
+        flex-grow: calc(var(--w) + 12);
+    }
+
+    .holding:hover {
+        border-color: var(--teal);
+        transform: translateY(-6px);
+    }
+
+    .timeline li:hover::before {
+        background: var(--red);
+        transform: scale(1.3);
+    }
+
+    .btn:hover {
+        background: var(--teal);
+        color: var(--on-fill);
+    }
+
+    .btn.secondary:hover {
+        background: var(--paper-2);
+        color: var(--ink);
+    }
+
+    .market-figure:hover,
+    .market-video:hover {
+        box-shadow: 7px 7px 0 var(--teal);
+    }
+
+    .bar:hover .bar-growth {
+        background: var(--surface);
+    }
+
+    /* the bar's value label appears on hover (touch users get it permanently: see below) */
+    .bar:hover::after {
+        visibility: visible;
+    }
+}
+
+
+/* ---------------------------------------------------------------
+   INPUT / C4  A touch user: no hover at all.
+   - the playful "hover the bar" caption is replaced with the plain numbers it was hiding
+   - chart values that a mouse would reveal on hover are printed on the chart instead
+---------------------------------------------------------------- */
+@media (hover: none) {
+    .hint-mouse {
+        display: none;
+    }
+
+    .hint-touch {
+        display: inline;
+    }
+}
+
+/* Chart value labels that must not depend on hover: touch screens and reduced-motion users.
+   Only every 5th year, and the last year, are labelled so the labels never collide. */
+@media (hover: none), (prefers-reduced-motion: reduce) {
+    .bar::after {
+        content: "\20B9" counter(bl) "." counter(bd, decimal-leading-zero) "L";
+        padding: 0.05rem 0.25rem;
+        font-size: 0.6rem;
+    }
+
+    @container style(--vis: 1) {
+        .bar:nth-child(5n)::after {
+            visibility: visible;
+        }
+    }
+
+    @container style(--is-last: 1) {
+        .bar::after {
+            visibility: visible;
+        }
+    }
+}
+
+/* ---------------------------------------------------------------
+   INPUT / C5  Any coarse pointer (phones, tablets, and laptops that also have a touchscreen).
+   any-pointer, not pointer: a hybrid laptop reports pointer: fine but ALSO has a finger.
+   Every control gets a 44px target.
+---------------------------------------------------------------- */
+@media (any-pointer: coarse) {
+    .pills label,
+    .chips label,
+    .chip,
+    .btn,
+    .topbar a.nav-link,
+    .risk-note summary,
+    .transcript summary {
+        min-height: var(--tap);
+    }
+
+    .topbar a.nav-link {
+        display: flex;
+        align-items: center;
+    }
+
+    .chips label,
+    .chip {
+        padding-inline: 1rem;
+    }
+
+    .footer-cols li a,
+    .back-top {
+        display: inline-block;
+        padding-block: 0.6rem;
+    }
+}
+
+
+/* ---------------------------------------------------------------
+   VIEWPORT / C1  A phone held upright (narrow screen).
+   A phone user opens the page to check the month, not to read the story:
+   - a 3-number strip ("this month at a glance") appears above the fold
+   - the decorative coin goes, so the strip fits on the first screen
+   - the over-budget verdict and the totals jump ABOVE the 7-row ledger
+   - the ledger comes before the donut
+   - the calculator keeps its result stuck to the bottom of the screen while you tweak
+---------------------------------------------------------------- */
+.live-result {
+    display: none;
+}
+
+@media (width < 40rem) {
+    .coin,
+    .scroll-cue {
+        display: none;
+    }
+
+    .hero {
+        padding-bottom: 1.5rem;
+    }
+
+    .hero-tagline {
+        grid-column: 1 / -1;
+    }
+
+    .glance {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        background: var(--surface);
+        border-block: 2px solid var(--ink);
+    }
+
+    .glance a {
+        display: block;
+        min-width: 0;
+        padding: 0.7rem 0.6rem;
+        text-decoration: none;
+    }
+
+    .glance a + a {
+        border-left: 1px solid var(--ink);
+    }
+
+    .glance .eyebrow {
+        display: block;
+        font-size: 0.6rem;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+    }
+
+    .glance strong {
+        display: block;
+        font-family: var(--serif);
+        font-size: 1.35rem;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+    }
+
+    .glance .lbl-deficit {
+        display: none;
+    }
+
+    @container style(--deficit: 1) {
+        .glance .lbl-left {
+            display: none;
+        }
+
+        .glance .lbl-deficit {
+            display: inline;
+        }
+    }
+
+    @container style(--any-over: 1) {
+        .glance .oc {
+            color: var(--red-text);
+        }
+    }
+
+    /* priority: the verdict and the totals before the rows */
+    .over-summary {
+        order: -2;
+        margin-top: 0;
+        margin-bottom: 1rem;
+    }
+
+    .ledger-total {
+        order: -1;
+        margin-top: 0;
+        margin-bottom: 1.25rem;
+    }
+
+    .donut-wrap {
+        order: 2;
+    }
+
+    .numbers dd.big {
+        font-size: clamp(1.35rem, 5.74vw, 1.64rem);
+    }
+
+    .live-result {
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        display: block;
+        margin: 1.25rem calc(-1 * clamp(1rem, 1.86vw, 1.395rem)) calc(-1 * clamp(1rem, 1.86vw, 1.395rem));
+        padding: 0.7rem clamp(1rem, 1.86vw, 1.395rem);
+        background: var(--ink);
+        color: var(--paper);
+        font-family: var(--serif);
+        font-size: 1.15rem;
+    }
+
+    .live-result .inr {
+        font-weight: 700;
+    }
+}
+
+/* the picture swap in the HTML uses exactly this condition: here the page makes room for the portrait image */
+@media (width < 40rem), (orientation: portrait) {
+    .market-media {
+        grid-template-columns: 1fr;
+    }
+
+    .market-video {
+        grid-column: 1;
+    }
+
+    .market-figure picture {
+        display: block;
+        max-width: 26rem;
+        margin-inline: auto;
+    }
+}
+
+
+/* ---------------------------------------------------------------
+   VIEWPORT / C2  A phone held sideways: wide but very short.
+   A sticky top bar and a sticky donut would each take a third of a 360px-high
+   screen, so both become ordinary content.
+---------------------------------------------------------------- */
+@media (orientation: landscape) and (height < 32rem) {
+    .topbar {
+        position: static;
+    }
+
+    html {
+        scroll-padding-top: 0;
+    }
+
+    .donut-wrap {
+        position: static;
+    }
+
+    .hero {
+        padding-bottom: 1.5rem;
+    }
+
+    .growth-chart {
+        height: 55vh;
+    }
+
+    .cols {
+        height: 50vh;
+    }
+}
+
+
+/* ---------------------------------------------------------------
+   VIEWPORT  Layout steps (range syntax). Wider than a phone, narrower than a laptop.
+---------------------------------------------------------------- */
+@media (width <= 62.5rem) {
+    .spend-grid,
+    .receipts {
+        grid-template-columns: 1fr;
+    }
+
+    .donut-wrap {
+        position: static;
+    }
+
+    .receipt {
+        margin-inline: auto;
+    }
+
+    .holdings {
+        grid-template-columns: 1fr;
+    }
+
+    .holding:nth-child(n) {
+        margin-top: 0;
+    }
+
+    .timeline {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .timeline::before {
+        display: none;
+    }
+}
+
+@media (width <= 56.25rem) {
+    /* stack chart above wealth card; positive margin so nothing overlaps */
+    .duo {
+        display: block;
+    }
+
+    .wealth {
+        margin: 1.75rem 0.75rem 0 1.5rem;
+    }
+}
+
+@media (width <= 50rem) {
+    .numbers {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .numbers > div:nth-child(3) {
+        padding-left: 0;
+        border-left: none;
+    }
+
+    .numbers > div:nth-child(n+3) {
+        border-top: 1px solid var(--ink);
+    }
+
+    .calc-layout {
+        display: block;
+    }
+
+    .forecast {
+        margin-top: -1rem;
+        padding-left: clamp(1rem, 1.86vw, 1.55rem);
+        padding-top: 3rem;
+    }
+
+    .calc-form {
+        margin-right: 0.75rem;
+    }
+
+    /* tagline and coin stack; coin moves under the text, right-aligned */
+    .hero-tagline,
+    .coin {
+        grid-column: 1 / -1;
+    }
+
+    .coin {
+        margin-top: 0.75rem;
+        margin-right: 14px;                    /* keeps the dashed ring inside the page */
+    }
+
+    .scroll-cue {
+        margin-bottom: 1.5rem;
+    }
+
+    .footer-cols {
+        grid-template-columns: 1fr;
+    }
+
+    .topbar .brand {
+        display: none;
+    }
+}
+
+@media (width <= 35rem) {
+    .ledger-row {
+        grid-template-columns: 1fr;
+    }
+
+    .status {
+        text-align: left;
+    }
+
+    .st-bad {
+        align-items: flex-start;
+    }
+
+    .ledger-total {
+        grid-template-columns: 1fr;
+    }
+
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    .timeline {
+        grid-template-columns: 1fr;
+    }
+
+    .transcript dl {
+        grid-template-columns: 1fr;
+    }
+
+    .transcript dd {
+        padding-bottom: 0.6rem;
+    }
+}
+
+@media (width <= 22rem) {
+    /* 320px: the narrowest screen the page promises to support */
+    .receipt li {
+        grid-template-columns: 3.4rem 1fr auto;
+        gap: 0.5rem;
+    }
+
+    .receipt {
+        padding-inline: 1rem;
+    }
+
+    .stats dd {
+        font-size: 1.4rem;
+    }
+}
+
+
+/* ---------------------------------------------------------------
+   PREFERENCE / C6  Motion allowed: scroll-driven reveals (progressive enhancement).
+   Browsers without animation-timeline simply show everything at once.
+---------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+        .reveal {
+            animation: reveal linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 60%;
+        }
+
+        .draw-x {
+            animation: draw-x linear both;
+            animation-timeline: view();
+            animation-range: entry 10% entry 100%;
+        }
+
+        .col i {
+            animation: draw-y linear both;
+            animation-timeline: view();
+            animation-range: entry 10% entry 100%;
+        }
+
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(40px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        @keyframes draw-x {
+            from { clip-path: inset(0 100% 0 0); }
+            to   { clip-path: inset(0 0 0 0); }
+        }
+
+        @keyframes draw-y {
+            from { clip-path: inset(100% 0 0 0); }
+            to   { clip-path: inset(0 0 0 0); }
+        }
+    }
+}
+
+
+/* ---------------------------------------------------------------
+   PREFERENCE / C7  Reduced motion: DESIGNED replacements, not just "animation: none".
+   Each moving thing is swapped for a still cue that keeps its meaning:
+     scrolling word strip   -> the same words, wrapped on a static ribbon
+     pulsing "Over budget"  -> a solid double ring around the badge (the words stay)
+     chart bars growing in  -> printed value labels on every 5th year and the last year
+     bobbing scroll arrow   -> a still arrow
+     spinning dashed coin   -> a still dashed coin
+---------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .marquee-track {
+        width: auto;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .marquee-group:nth-child(2) {
+        display: none;
+    }
+
+    .marquee-group {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .badge {
+        box-shadow: 0 0 0 2px var(--surface), 0 0 0 5px var(--red);
+    }
+
+    .sticker {
+        transform: none;
+    }
+}
+
+
+/* ---------------------------------------------------------------
+   PREFERENCE / C8  Dark scheme (someone reading at night, or whose OS is dark).
+   Tokens change; components do not. Surfaces go dark, text and the three
+   accent colours go light, and anything that carries white text keeps its fill.
+---------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --paper: #0a121d;
+        --paper-2: #0f1b2a;
+        --surface: #15233a;
+        --ink: #f3efe6;
+        --muted: #aeb7c3;
+        --teal-dark: #5dd6b4;
+        --red-text: #ff8f6e;
+        --focus: #ffb59e;
+        --line-rgb: 243, 239, 230;
+        --line-alpha: 0.05;
+        --cat1: #6f96cc;
+    }
+
+    .statement mark {
+        background: linear-gradient(transparent 55%, rgba(95, 211, 179, 0.4) 55%);
+    }
+
+    .statement mark.out {
+        background: linear-gradient(transparent 55%, rgba(255, 138, 107, 0.4) 55%);
+    }
+
+    .ledger-row::before {
+        background: rgba(255, 138, 107, 0.1);
+    }
+
+    .receipt li {
+        border-bottom-color: rgba(239, 232, 216, 0.3);
+    }
+
+    .over-summary {
+        background: rgba(95, 211, 179, 0.14);
+    }
+
+    .market-video video {
+        background: #0a1626;
+    }
+}
+
+
+/* ---------------------------------------------------------------
+   PREFERENCE / C9  Higher contrast (prefers-contrast: more).
+   Not just "darker": decoration that fights the text is removed, thin lines get thick,
+   and every colour-only difference gets a pattern or a word as well.
+---------------------------------------------------------------- */
+@media (prefers-contrast: more) {
+    :root {
+        --paper: #fffdf7;
+        --paper-2: #f4eddb;
+        --ink: #000;
+        --muted: #1c2430;
+        --teal: #0d5e4a;
+        --teal-dark: #0a4a3a;
+        --red: #9c2308;
+        --red-text: #8a1c05;
+        --line-alpha: 0;
+        --focus: #000;
+    }
+
+    .calc-section,
+    .footer {
+        --focus: #fff;
+    }
+
+    /* the giant outlined chapter numbers sit behind the headings: remove the visual noise */
+    .chapter-num {
+        display: none;
+    }
+
+    a {
+        text-decoration: underline;
+        text-underline-offset: 0.2em;
+    }
+
+    .topbar a.nav-link,
+    .footer-cols a,
+    .brand,
+    .back-top,
+    .glance a {
+        text-decoration: underline;
+    }
+
+    :where(a, button, summary, video, [tabindex]):focus-visible,
+    .pills input:focus-visible + label {
+        outline-width: 4px;
+        box-shadow: 0 0 0 7px var(--surface);
+    }
+
+    /* thick borders on every chart and card */
+    .flow-bar,
+    .alloc,
+    .savings,
+    .wealth,
+    .receipt,
+    .donut,
+    .over-summary,
+    .market-figure,
+    .market-video,
+    .forecast,
+    .calc-form,
+    .risk-note {
+        border-width: 3px;
+    }
+
+    .pills label,
+    .chips label,
+    .chip,
+    .btn {
+        border-width: 2px;
+    }
+
+    .pills input:checked + label,
+    .chips input:checked + label {
+        text-decoration: underline;
+        text-decoration-thickness: 3px;
+    }
+
+    /* spent vs kept: hatch the spent half so it differs from the kept half without colour */
+    .flow-spent,
+    .alloc .a-st {
+        background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.3) 0 5px, transparent 5px 12px);
+    }
+
+    .alloc .a-fd {
+        background-image: radial-gradient(rgba(255, 255, 255, 0.35) 2px, transparent 3px);
+        background-size: 12px 12px;
+    }
+
+    .statement mark,
+    .statement mark.out {
+        background: none;
+        text-decoration: underline;
+        text-decoration-thickness: 4px;
+        text-underline-offset: 0.15em;
+    }
+
+    .statement mark.out {
+        text-decoration-style: wavy;
+    }
+
+    .ledger-row::before {
+        background: none;
+        border-left-width: 10px;
+    }
+
+    .notes li {
+        background: transparent;
+        border: 2px solid var(--mustard);
+    }
+
+    .receipt small,
+    .numbers dd.note,
+    .numbers dt {
+        color: var(--ink);
+    }
+
+    .hero-tagline .squiggle {
+        background: none;
+        text-decoration: underline wavy var(--red);
+        text-decoration-thickness: 4px;
+    }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+    :root {
+        --paper: #000;
+        --paper-2: #07101a;
+        --surface: #000;
+        --ink: #fff;
+        --muted: #e6ebef;
+        --teal-dark: #86f0cf;
+        --red-text: #ffb09a;
+        --focus: #fff;
+        --cat1: #8db1e3;
+    }
+}
+
+/* Windows "forced colours": the system palette replaces ours, so backgrounds vanish.
+   Anything drawn only with a background gets a real border or an outline instead. */
+@media (forced-colors: active) {
+    .meter-fill,
+    .meter-over,
+    .meter-limit {
+        forced-color-adjust: none;
+    }
+
+    .pills input:checked + label,
+    .chips input:checked + label {
+        outline: 3px solid Highlight;
+    }
+
+    .badge {
+        border: 2px solid CanvasText;
+    }
+}
+
+
+/* ---------------------------------------------------------------
+   OUTPUT / C10  A high-resolution screen (2 device pixels per CSS pixel and up).
+   A 1px line is two device pixels thick there and looks heavy next to the type;
+   the faint rules become hairlines (0.5px) that stay crisp.
+---------------------------------------------------------------- */
+@media (min-resolution: 2dppx) {
+    :root {
+        --hair: 0.5px;
+    }
+}
+
+
+/* =====================================================
+   13. PRINT  (Challenge C2: the page prints as an A4 monthly statement)
+   Print is a different reader with a different job: a sheet to file or sign.
+   Out: navigation, decoration, video, controls, motion.
+   In: a letterhead, every number as text, the URL behind each link.
+===================================================== */
+
+@page {
+    size: A4;
+    margin: 16mm 14mm 18mm;
+}
+
+@media print {
+    :root {
+        --paper: #fff;
+        --paper-2: #fff;
+        --surface: #fff;
+        --ink: #000;
+        --muted: #333;
+        --teal-dark: #0a4a3a;
+        --red-text: #8a1c05;
+        --line-alpha: 0;
+    }
+
+    html, body {
+        background: #fff;
+        color: #000;
+        font-size: 9.5pt;
+    }
+
+    /* chrome that has no meaning on paper */
+    .topbar,
+    .glance,
+    .live-result,
+    .coin,
+    .scroll-cue,
+    .marquee,
+    .chapter-num,
+    .hero-tagline,
+    .sticker,
+    .back-top,
+    .btn,
+    .chip,
+    .gloss,
+    .pills,
+    .chips,
+    .market-video,
+    .market-figure picture,
+    .hint-mouse,
+    .hint-touch,
+    .footer-cols nav {
+        display: none !important;
+    }
+
+    .print-only {
+        display: block;
+    }
+
+    .print-only.values {
+        font-family: var(--mono);
+        font-size: 9pt;
+    }
+
+    .print-head {
+        padding-bottom: 0.6rem;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #000;
+    }
+
+    .print-head h2 {
+        margin: 0.2rem 0;
+        font-family: var(--serif);
+        font-size: 20pt;
+    }
+
+    /* animation never runs on paper; reveal everything */
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        box-shadow: none !important;
+    }
+
+    .reveal,
+    .draw-x,
+    .col i {
+        opacity: 1 !important;
+        transform: none !important;
+        clip-path: none !important;
+    }
+
+    .hero {
+        padding: 0 0 0.5rem;
+        background: none;
+    }
+
+    .wordmark {
+        font-size: 28pt;
+    }
+
+    /* colour carries meaning in the charts: ask the printer to keep it */
+    .flow-bar,
+    .alloc,
+    .donut,
+    .meter-fill,
+    .meter-over,
+    .meter-limit,
+    .swatch,
+    .col i,
+    .bar,
+    .badge {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    /* layout: one column, no sticky anything */
+    .spend-grid,
+    .receipts,
+    .holdings,
+    .calc-layout,
+    .duo,
+    .numbers {
+        display: block;
+    }
+
+    .numbers {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .donut-wrap,
+    .topbar {
+        position: static;
+    }
+
+    .calc-section,
+    .footer {
+        background: #fff;
+        color: #000;
+        border-top: 2px solid #000;
+    }
+
+    .calc-section *,
+    .footer * {
+        color: inherit;
+    }
+
+    .calc-form {
+        border: 1px solid #000;
+        margin: 0 0 1rem;
+        padding: 0.75rem;
+    }
+
+    .calc-form fieldset {
+        break-inside: avoid;
+    }
+
+    /* inputs: show only the picked option, as a value on the statement */
+    .calc-form input:not(:checked) + label {
+        display: none;
+    }
+
+    .calc-form input:checked + label {
+        display: inline-block;
+        border: 1px solid #000;
+        background: none;
+        color: #000;
+    }
+
+    .ledger-row {
+        break-inside: avoid;
+        border-bottom: 0.5pt solid #000;
+    }
+
+    .ledger-row .pills,
+    .ledger-row .chips {
+        display: none !important;
+    }
+
+    .chapter,
+    .calc-section {
+        break-before: auto;
+        padding-block: 1rem;
+    }
+
+    .chapter h2,
+    .calc-section h2,
+    h3 {
+        break-after: avoid;
+    }
+
+    .holding,
+    .receipt,
+    .stats > div,
+    .timeline li,
+    .over-summary {
+        break-inside: avoid;
+    }
+
+    .growth-chart,
+    .cols {
+        height: 55mm !important;
+    }
+
+    .ledger-row {
+        padding-block: 0.25rem !important;
+        gap: 0.2rem !important;
+    }
+
+    .receipt {
+        margin: 0 0 0.75rem !important;
+        transform: none !important;
+    }
+
+    .spend-grid,
+    .receipts {
+        gap: 0.75rem !important;
+    }
+
+    .opening-mark {
+        margin-block: 0.4rem !important;
+    }
+
+    .donut-wrap {
+        break-inside: avoid;
+    }
+
+    .donut {
+        width: 58mm;
+    }
+
+    .spend-grid {
+        break-before: auto;
+    }
+
+    /* tighter vertical rhythm so the statement fits on few sheets */
+    .chapter,
+    .calc-section,
+    .footer {
+        padding-block: 0.6rem !important;
+    }
+
+    .hero {
+        min-height: 0 !important;
+    }
+
+    .wrap {
+        padding-inline: 0 !important;
+    }
+
+    /* links: print the address behind the words */
+    a {
+        color: #000;
+        text-decoration: underline;
+    }
+
+    a[href^="http"]::after,
+    a[href^="mailto:"]::after {
+        content: " (" attr(href) ")";
+        font-size: 0.85em;
+        word-break: break-all;
+    }
+
+    abbr[title]::after {
+        content: " (" attr(title) ")";
+        font-size: 0.85em;
+    }
+
+    details:not([open]) > :not(summary) {
+        display: revert;
+    }
+
+    details > summary {
+        list-style: none;
+    }
+
+    /* widows/orphans */
+    p, li {
+        orphans: 3;
+        widows: 3;
+    }
+}
+
+@media print {
+    .growth-chart,
+    .cols,
+    .duo > *,
+    .forecast,
+    .market-figure {
+        break-inside: avoid;
+    }
+}
+
+
+/* =====================================================================
+   14. CHAPTER 03 - THE TRACKER  (Lab 3)
+   The only part of the page driven by JavaScript (js/*.js). It reuses the
+   design tokens above, so dark mode, higher contrast and print follow
+   automatically. Its own @media rules are kept at the end of this section
+   (14h) rather than in section 12, so the whole Lab 3 addition reads in
+   one place.
+===================================================================== */
+
+/* ---------- 14a. Frame ---------- */
+.tracker {
+    border-bottom: 1px solid var(--ink);
+}
+
+/* until the script has drawn it, the empty app is not shown (no flash of empty boxes) */
+.tracker:not(.is-ready) .trk-app {
+    display: none;
+}
+
+.trk-noscript {
+    padding: 1rem 1.25rem;
+    border: 2px dashed var(--ink);
+    font-family: var(--mono);
+}
+
+.trk-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 2px solid var(--ink);
+}
+
+.trk-save {
+    color: var(--teal-dark);
+}
+
+.trk-save.is-warn {
+    color: var(--red-text);
+}
+
+/* headline numbers, set like the Chapter 01 stat row */
+.trk-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+    margin: 0 0 clamp(1.6rem, 3.1vw, 2.5rem);
+    border-bottom: 1px solid var(--ink);
+}
+
+.trk-stats > div {
+    padding: 1rem 1rem 1.1rem 0;
+}
+
+.trk-stats > div + div {
+    padding-left: 1rem;
+    border-left: 1px solid rgba(var(--line-rgb), 0.25);
+}
+
+.trk-stats dt {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.trk-stats .big {
+    margin-top: 0.2rem;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(1.45rem, 2.6vw, 2.1rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+.trk-stats .is-spend .big {
+    color: var(--red-text);
+}
+
+.trk-stats .note {
+    margin-top: 0.25rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+}
+
+.trk-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(1.6rem, 3.1vw, 3.1rem);
+    align-items: start;
+}
+
+.trk-side {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+}
+
+.trk-card {
+    padding: clamp(1rem, 1.86vw, 1.4rem);
+    background: var(--surface);
+    border: 1px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+}
+
+.trk-card h3,
+.trk-panel h3 {
+    margin-bottom: 0.8rem;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(1.35rem, 2.2vw, 1.75rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+}
+
+.trk-panel + .trk-panel,
+.trk-list {
+    margin-top: clamp(1.6rem, 3.1vw, 2.5rem);
+}
+
+.trk-small {
+    font-size: 0.86rem;
+    color: var(--muted);
+}
+
+.trk-small code {
+    font-family: var(--mono);
+}
+
+
+/* ---------- 14b. Form fields ---------- */
+.trk-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+    margin-bottom: 0.85rem;
+}
+
+.trk-field label,
+.trk-chips legend {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.trk-inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+}
+
+.trk-app :is(input[type="text"], input[type="search"], input[type="date"], select) {
+    width: 100%;
+    min-height: 2.5rem;
+    padding: 0.45rem 0.65rem;
+    font: inherit;
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 0;
+}
+
+.trk-inline select {
+    width: auto;
+    font-family: var(--serif);
+    font-weight: 700;
+}
+
+.trk-app :is(input, select):focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 1px;
+}
+
+.trk-app select:disabled {
+    opacity: 0.55;
+}
+
+/* an invalid field says so with a thicker red edge AND a message, never colour alone */
+.trk-app :is(input, select)[aria-invalid="true"] {
+    border-color: var(--red-text);
+    border-left-width: 6px;
+}
+
+.trk-err {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--red-text);
+}
+
+.trk-err:empty {
+    display: none;
+}
+
+.trk-err::before {
+    content: "\25B2  ";
+}
+
+.trk-hint {
+    min-height: 1.3em;
+    margin: -0.4rem 0 0.85rem;
+    font-size: 0.84rem;
+    color: var(--teal-dark);
+}
+
+.trk-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 0 0.9rem;
+}
+
+/* Money out / Money in: radios dressed as a segmented switch (same idea as the ledger pills) */
+.trk-type {
+    display: flex;
+    margin: 0 0 1rem;
+    padding: 0;
+    border: 0;
+}
+
+.trk-type input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    opacity: 0;
+}
+
+.trk-type label {
+    flex: 1;
+    padding: 0.55rem 0.5rem;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1.5px solid var(--ink);
+    cursor: pointer;
+}
+
+.trk-type label + input + label {
+    margin-left: -1.5px;
+}
+
+.trk-type input:checked + label {
+    color: var(--paper);
+    background: var(--ink);
+    font-weight: 700;
+}
+
+.trk-type input:focus-visible + label {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+/* the error summary at the top of the form */
+.trk-errors {
+    margin-bottom: 1rem;
+    padding: 0.75rem 0.9rem;
+    border: 2px solid var(--red-text);
+    border-left-width: 8px;
+    font-size: 0.9rem;
+}
+
+.trk-errors ul {
+    margin-top: 0.35rem;
+    padding-left: 1.1rem;
+    list-style: square;
+}
+
+.trk-errors a {
+    color: var(--red-text);
+    font-weight: 700;
+}
+
+.trk-errors .button-row {
+    margin-top: 0.7rem;
+}
+
+/* live exchange-rate line under the amount */
+.trk-rate {
+    margin: -0.35rem 0 0.9rem;
+    font-size: 0.84rem;
+}
+
+.trk-rate:empty {
+    display: none;
+}
+
+.trk-rate[data-state="loading"] { color: var(--muted); }
+.trk-rate[data-state="ok"]      { color: var(--teal-dark); }
+.trk-rate[data-state="stale"]   { padding-left: 0.6rem; border-left: 4px solid var(--mustard); }
+.trk-rate[data-state="error"]   { color: var(--red-text); font-weight: 700; }
+
+.trk-rate[data-state="loading"]::before {
+    content: "";
+    display: inline-block;
+    width: 0.8em;
+    height: 0.8em;
+    margin-right: 0.45em;
+    vertical-align: -0.1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: trk-spin 0.8s linear infinite;
+}
+
+@keyframes trk-spin {
+    to { transform: rotate(1turn); }
+}
+
+.trk-form.is-editing {
+    box-shadow: 6px 6px 0 var(--mustard);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.btn.is-danger {
+    color: var(--red-text);
+    border-color: var(--red-text);
+}
+
+.btn[data-armed] {
+    color: var(--on-fill);
+    background: var(--red);
+    border-color: var(--red);
+}
+
+/* small text buttons (Edit, Delete, Undo, Try again) */
+.trk-link {
+    padding: 0.15rem 0.25rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: inherit;
+    background: none;
+    border: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+}
+
+.trk-link.is-danger {
+    color: var(--red-text);
+}
+
+
+/* ---------- 14c. Statement import ---------- */
+.trk-drop {
+    position: relative;
+    display: block;
+    margin-top: 0.9rem;
+    padding: 1.4rem 1rem;
+    text-align: center;
+    border: 2px dashed var(--ink);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/* the real file input stays in the page for the keyboard; the dashed box is what people see */
+.trk-drop input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.trk-drop:focus-within {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+}
+
+.trk-drop.is-over {
+    border-style: solid;
+    border-color: var(--teal);
+    background: rgba(11, 122, 94, 0.12);
+}
+
+.trk-drop-text strong {
+    display: block;
+    font-family: var(--serif);
+    font-size: 1.15rem;
+}
+
+.trk-progress {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.4rem 0.8rem;
+    margin-top: 1rem;
+}
+
+.trk-progress[hidden],
+.trk-preview[hidden] {
+    display: none;
+}
+
+.trk-progress progress {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 0.7rem;
+    accent-color: var(--teal);
+}
+
+.trk-preview {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 2px dashed var(--ink);
+    font-size: 0.9rem;
+}
+
+.trk-preview-head.is-error {
+    color: var(--red-text);
+}
+
+.trk-outcome {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0.6rem 0 0.8rem;
+}
+
+.trk-outcome .is-ok   { color: var(--teal-dark); font-weight: 700; }
+.trk-outcome .is-warn { color: var(--red-text); font-weight: 700; }
+
+.trk-preview details {
+    margin-bottom: 0.7rem;
+}
+
+.trk-preview summary {
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+}
+
+.trk-issues {
+    max-height: 12rem;
+    overflow: auto;
+    margin-top: 0.4rem;
+    padding: 0.5rem 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    background: var(--paper);
+    border: 1px solid rgba(var(--line-rgb), 0.3);
+}
+
+
+/* ---------- 14d. Tables (budget check and transactions) ---------- */
+.trk-table-wrap {
+    overflow-x: auto;
+}
+
+.trk-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+.trk-table th,
+.trk-table td {
+    padding: 0.55rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid rgba(var(--line-rgb), 0.25);
+}
+
+.trk-table thead th {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 2px solid var(--ink);
+}
+
+.trk-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.trk-table small {
+    display: block;
+    font-size: 0.76rem;
+    color: var(--muted);
+}
+
+.trk-table tfoot :is(th, td) {
+    font-weight: 700;
+    border-top: 2px solid var(--ink);
+    border-bottom: 0;
+}
+
+/* budget meter: a solid bar for what is spent, a hatched bar for the forecast,
+   and a black tick at the budget (two thirds along, so overspending has room to show) */
+.trk-meter {
+    position: relative;
+    display: inline-block;
+    width: 5.5rem;
+    height: 0.6rem;
+    margin-right: 0.55rem;
+    vertical-align: middle;
+    border: 1px solid var(--ink);
+    --fill: var(--teal);
+    background:
+        linear-gradient(var(--fill), var(--fill)) left / calc(var(--used) / 1.5 * 100%) 100% no-repeat,
+        repeating-linear-gradient(45deg, rgba(var(--line-rgb), 0.45) 0 2px, transparent 2px 5px) left / calc(var(--forecast) / 1.5 * 100%) 100% no-repeat;
+}
+
+.trk-meter::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    left: 66.67%;
+    width: 2px;
+    background: var(--ink);
+}
+
+.trk-budget-table .is-over .trk-meter,
+.trk-budget-table .is-heading-over .trk-meter {
+    --fill: var(--red);
+}
+
+.trk-budget-table .is-close .trk-meter {
+    --fill: var(--mustard);
+}
+
+.trk-status {
+    font-size: 0.84rem;
+}
+
+.trk-budget-table :is(.is-over, .is-heading-over) .trk-status {
+    font-weight: 700;
+    color: var(--red-text);
+}
+
+.trk-due {
+    margin-top: 0.8rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+
+.trk-due strong {
+    color: var(--ink);
+}
+
+/* transactions */
+.trk-list-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.4rem 1rem;
+}
+
+.trk-list-head h3 {
+    margin-bottom: 0.4rem;
+}
+
+.trk-list-head .eyebrow {
+    color: var(--muted);
+}
+
+.trk-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0 1rem;
+    margin: 0.8rem 0 0.4rem;
+}
+
+.trk-filters .trk-field {
+    flex: 1 1 10rem;
+}
+
+.trk-filters .trk-search {
+    flex: 2 1 16rem;
+}
+
+.trk-filters > .btn {
+    margin-bottom: 0.85rem;
+}
+
+.trk-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    flex: 1 1 100%;
+    order: 5;
+    margin: 0 0 0.9rem;
+    padding: 0;
+    border: 0;
+}
+
+.trk-chips legend {
+    float: left;                       /* lets the legend sit in the flex row */
+    margin: 0.35rem 0.6rem 0 0;
+}
+
+.trk-chip {
+    position: relative;
+    padding: 0.3rem 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    border: 1px solid var(--ink);
+    border-radius: 999px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.trk-chip input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.trk-chip:has(input:checked) {
+    color: var(--paper);
+    background: var(--ink);
+}
+
+.trk-chip:has(input:checked)::before {
+    content: "\2713  ";
+}
+
+.trk-chip:has(input:focus-visible) {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+}
+
+.trk-tx-table .in    { color: var(--teal-dark); font-weight: 700; }
+.trk-tx-table .outgo { color: var(--red-text);  font-weight: 700; }
+
+.trk-tx-table tr.is-editing td {
+    background: rgba(226, 169, 59, 0.18);
+}
+
+.trk-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.trk-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0 0.35rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    color: var(--muted);
+    cursor: help;
+}
+
+.trk-empty {
+    padding: 1.2rem 0;
+    font-family: var(--mono);
+    font-size: 0.88rem;
+}
+
+.trk-more {
+    margin-top: 0.9rem;
+}
+
+.trk-more[hidden],
+.trk-empty[hidden] {
+    display: none;
+}
+
+.trk-data-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--ink);
+}
+
+
+/* ---------- 14e. Insight cards ---------- */
+.trk-insights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1.25rem 1.5rem;
+}
+
+.trk-insight {
+    padding-top: 0.6rem;
+    border-top: 3px solid var(--ink);
+}
+
+.trk-insight h4 {
+    margin: 0 0 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--red-text);
+}
+
+.trk-lead {
+    margin-bottom: 0.5rem;
+    font-size: 0.92rem;
+}
+
+.trk-calm {
+    font-size: 0.9rem;
+    color: var(--teal-dark);
+}
+
+.trk-mini li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+    border-bottom: 1px dashed rgba(var(--line-rgb), 0.35);
+}
+
+.trk-mini small {
+    display: block;
+    font-size: 0.76rem;
+    color: var(--muted);
+}
+
+.trk-mini b {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.trk-mini .is-warn b {
+    color: var(--red-text);
+}
+
+/* category bars: the longest bar is the biggest category, the rest are to scale */
+.trk-bars {
+    display: grid;
+    gap: 0.35rem;
+    margin-bottom: 0.7rem;
+}
+
+.trk-bars li {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.82rem;
+    isolation: isolate;
+}
+
+.trk-bars li::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: -1;
+    width: calc(var(--share) * 100%);
+    background: var(--c);
+    opacity: 0.28;
+}
+
+.trk-bars b {
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* ---------- 14f. Messages (toast) ---------- */
+.trk-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1rem;
+    z-index: 60;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.9rem;
+    max-width: min(38rem, calc(100vw - 2rem));
+    padding: 0.8rem 1rem;
+    font-size: 0.92rem;
+    color: var(--paper);
+    background: var(--ink);
+    border-left: 6px solid var(--teal);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.25);
+    transform: translate(-50%, calc(100% + 1.5rem));
+    visibility: hidden;                   /* hidden toasts are not reachable with Tab */
+    transition: transform 0.3s, visibility 0s 0.3s;
+}
+
+.trk-toast.is-on {
+    transform: translate(-50%, 0);
+    visibility: visible;
+    transition: transform 0.3s;
+}
+
+.trk-toast[data-tone="error"] {
+    border-left-color: var(--red);
+}
+
+.trk-toast .trk-link {
+    color: var(--mustard);
+    font-weight: 700;
+}
+
+
+/* ---------- 14g. Chapter 02 hand-offs: alerts written by the tracker ---------- */
+.alerts li + li {
+    margin-top: 0.3rem;
+}
+
+.alerts a {
+    color: var(--red-text);
+    font-weight: 700;
+}
+
+
+/* ---------- 14h. Tracker contexts ---------- */
+body:has(#tracker:target) .nav-link[href="#tracker"] {
+    background-size: 100% 2px;
+    font-weight: 700;
+}
+
+@media (width <= 62.5rem) {
+    .trk-grid {
+        grid-template-columns: minmax(0, 1fr);    /* minmax(0, ...) lets wide content shrink instead of overflowing */
+    }
+}
+
+@media (width < 40rem) {
+    .trk-row {
+        grid-template-columns: 1fr;
+    }
+
+    .trk-stats > div + div {
+        padding-left: 0;
+        border-left: 0;
+    }
+
+    .trk-stats > div {
+        border-top: 1px solid rgba(var(--line-rgb), 0.25);
+    }
+
+    /* transactions become cards: one row = one block, each cell labelled */
+    .trk-tx-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    .trk-tx-table tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.1rem 0.75rem;
+        padding: 0.65rem 0;
+        border-bottom: 1px solid rgba(var(--line-rgb), 0.3);
+    }
+
+    .trk-tx-table td {
+        padding: 0;
+        border: 0;
+    }
+
+    .trk-tx-table td:nth-child(1) { grid-column: 1; font-size: 0.8rem; color: var(--muted); }
+    .trk-tx-table td:nth-child(2) { grid-column: 1; grid-row: 2; font-weight: 700; }
+    .trk-tx-table td:nth-child(3) { grid-column: 1; grid-row: 3; font-size: 0.82rem; }
+    .trk-tx-table td:nth-child(4) { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 1.02rem; }
+    .trk-tx-table td:nth-child(5) { grid-column: 2; grid-row: 3; }
+
+    /* budget check: one block per category, no sideways scrolling */
+    .trk-budget-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    .trk-budget-table tr {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.15rem 0.6rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid rgba(var(--line-rgb), 0.3);
+    }
+
+    .trk-budget-table :is(th, td) {
+        padding: 0;
+        border: 0;
+    }
+
+    .trk-budget-table th,
+    .trk-budget-table .trk-status-cell {
+        grid-column: 1 / -1;
+    }
+
+    .trk-budget-table td.num {
+        text-align: left;
+        white-space: normal;
+    }
+
+    .trk-budget-table td.num::before {
+        content: attr(data-label);
+        display: block;
+        font-family: var(--mono);
+        font-size: 0.66rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+    }
+
+    .trk-budget-table tfoot tr {
+        border-top: 2px solid var(--ink);
+    }
+
+    .trk-budget-table tfoot :is(th, td) {
+        border: 0;
+    }
+}
+
+@media (any-pointer: coarse) {
+    .trk-link,
+    .trk-chip,
+    .trk-type label {
+        min-height: var(--tap);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .trk-app :is(input[type="text"], input[type="search"], input[type="date"], select) {
+        min-height: var(--tap);
+    }
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .trk-drop:hover {
+        background: rgba(var(--line-rgb), 0.05);
+    }
+
+    .trk-link:hover {
+        text-decoration-thickness: 2px;
+    }
+
+    .trk-tx-table tbody tr:hover td {
+        background: rgba(var(--line-rgb), 0.04);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .trk-toast,
+    .trk-toast.is-on,
+    .trk-drop {
+        transition: none;
+    }
+
+    /* the spinner stops; the words "Fetching..." still say what is happening */
+    .trk-rate[data-state="loading"]::before {
+        animation: none;
+        border-right-color: currentColor;
+        border-style: dotted;
+    }
+}
+
+@media (prefers-contrast: more) {
+    .trk-card {
+        box-shadow: none;
+        border-width: 2px;
+    }
+
+    .trk-table th,
+    .trk-table td,
+    .trk-mini li {
+        border-bottom-color: var(--ink);
+    }
+
+    .trk-bars li::before {
+        opacity: 0.5;
+    }
+}
+
+@media (forced-colors: active) {
+    .trk-meter {
+        forced-color-adjust: none;
+        background: Canvas;
+    }
+
+    .trk-chip:has(input:checked) {
+        border-width: 3px;
+    }
+}
+
+/* PRINT: the statement keeps the numbers, not the controls */
+@media print {
+    .trk-side,
+    .trk-toolbar select,
+    .trk-filters,
+    .trk-actions,
+    .trk-data-actions,
+    .trk-more,
+    .trk-toast,
+    .trk-insight button {
+        display: none !important;
+    }
+
+    .trk-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .trk-card,
+    .trk-panel,
+    .trk-insight {
+        break-inside: avoid;
+    }
+
+    .trk-meter {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+}
+
+
+/* =====================================================================
+   15. IMMERSION AND MOTION  (Lab 3 visual refresh)
+   Inspired by two references: a film that opens the page and a stage that
+   holds still while things change in place (jjettas.com), and an intro
+   wordmark, eased masked type and one warm paper with a single accent
+   (auge-xp.com).
+
+   Rules this section follows:
+   - Static first. 15a-15c look complete with no animation at all.
+   - Every scroll effect is a CSS scroll-driven animation (animation-timeline),
+     which the browser runs off the main thread: no scroll listeners, no jank.
+   - Only transform, opacity and clip-path are animated.
+   - All of it sits inside prefers-reduced-motion: no-preference AND
+     @supports (animation-timeline: view()). Lab 2's reduced-motion block
+     (C7) also switches every animation off.
+===================================================================== */
+
+/* ---------- 15a. The opening film (static layout) ---------- */
+.opening {
+    position: relative;
+    margin-top: calc(-1 * var(--topbar-h, 0px));     /* the film runs under the (glass) top bar */
+    color: #f3efe6;
+    background: var(--midnight);
+}
+
+.opening-stage {
+    position: relative;
+    min-height: 100svh;
+    overflow: clip;
+    isolation: isolate;
+    container-type: inline-size;
+    background: var(--midnight);
+}
+
+.opening-film {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    background: var(--midnight) url("assets/img/opening-poster.jpg") center / cover;
+}
+
+.opening-video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* a shade over the film keeps every word readable (top and bottom darker) */
+.opening-film::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, rgba(8, 17, 31, 0.7) 0%, rgba(8, 17, 31, 0.15) 30%, rgba(8, 17, 31, 0.25) 60%, rgba(8, 17, 31, 0.9) 100%),
+        radial-gradient(ellipse at 75% 45%, transparent 40%, rgba(8, 17, 31, 0.45) 100%);
+}
+
+.opening-copy {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: auto 1fr auto auto;
+    column-gap: 1.5rem;
+    min-height: 100svh;
+    padding-top: calc(var(--topbar-h, 0px) + clamp(1rem, 2.5vw, 1.75rem));
+    padding-bottom: clamp(0.75rem, 1.5vw, 1.25rem);
+}
+
+.opening .hero-meta {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    align-self: start;
+    color: #d5d9e0;
+    border-bottom-color: rgba(243, 239, 230, 0.35);
+}
+
+.opening-manifesto.intro {
+    grid-column: 6 / -1;
+    grid-row: 2;
+    align-self: center;
+    max-width: 40rem;
+    margin: 2rem 0;
+    font-family: var(--serif);
+    font-size: clamp(1.35rem, 2.6vw, 2.35rem);
+    line-height: 1.18;
+    letter-spacing: -0.015em;
+    text-wrap: pretty;
+}
+
+.opening .scroll-cue {
+    grid-column: 1 / span 5;
+    grid-row: 3;
+    align-self: end;
+    margin: 0 0 0.6rem;
+    color: #d5d9e0;
+}
+
+.opening-mark {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    container-type: inline-size;
+}
+
+/* the masthead fills the full width, like a magazine cover */
+.opening .wordmark {
+    font-size: 16.4cqi;
+    line-height: 0.78;
+    letter-spacing: -0.035em;
+}
+
+.opening .wm-fin   { color: #f3efe6; }
+.opening .wm-track { color: var(--mustard); }
+.opening .wm-reg   { color: var(--mustard); }
+
+/* pause / play the film (WCAG 2.2.2: moving content that lasts more than 5 s can be paused) */
+.film-toggle {
+    position: absolute;
+    right: var(--gutter);
+    bottom: calc(13.2cqi + 1.75rem);
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    color: #f3efe6;
+    background: rgba(8, 17, 31, 0.45);
+    border: 1px solid rgba(243, 239, 230, 0.6);
+    border-radius: 50%;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+}
+
+.film-toggle::before {                      /* pause icon: two bars */
+    content: "";
+    width: 0.7rem;
+    height: 0.8rem;
+    border-inline: 0.22rem solid currentColor;
+}
+
+.film-toggle[aria-pressed="true"]::before { /* play icon: a triangle */
+    width: 0;
+    height: 0;
+    border: 0;
+    border-left: 0.7rem solid currentColor;
+    border-block: 0.42rem solid transparent;
+    margin-left: 0.2rem;
+}
+
+.film-toggle:focus-visible {
+    outline: 3px solid var(--mustard);
+    outline-offset: 3px;
+}
+
+.film-toggle[hidden] {
+    display: none;
+}
+
+/* marks the dark part of the opening, so js/motion.js knows when the top bar is over the film */
+.film-sentinel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 52%;
+    pointer-events: none;
+}
+
+/* the first spread now holds the tagline and the coin */
+.hero {
+    padding-top: clamp(2.5rem, 6vw, 5rem);
+}
+
+.hero-tagline .line {
+    overflow: clip;
+    padding-bottom: 0.12em;                 /* room for descenders and the squiggle */
+    margin-bottom: -0.12em;
+}
+
+.lift {
+    display: inline-block;
+}
+
+.chapter-head h2 {
+    overflow: clip;
+    padding-bottom: 0.1em;
+}
+
+
+/* ---------- 15b. Top bar: glass over the film, progress line, "you are here" ---------- */
+.topbar {
+    transition: background-color 0.5s var(--ease-out), color 0.5s var(--ease-out), border-color 0.5s var(--ease-out);
+}
+
+html.on-film .topbar {
+    color: #f3efe6;
+    background-color: rgba(8, 17, 31, 0.62);
+    border-bottom-color: rgba(243, 239, 230, 0.18);
+    backdrop-filter: blur(14px) saturate(1.2);
+}
+
+html.on-film .topbar :is(.brand sup, a.nav-link span) {
+    color: var(--mustard);
+}
+
+.scroll-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--teal), var(--mustard), var(--red));
+    transform-origin: left;
+    transform: scaleX(0);
+    pointer-events: none;
+}
+
+/* scroll-spy (js/motion.js sets aria-current on the chapter in view) */
+.topbar a.nav-link[aria-current="true"] {
+    background-size: 100% 2px;
+}
+
+
+/* ---------- 15c. Intro curtain (decorative, once per visit) ---------- */
+.curtain {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: grid;
+    place-items: center;
+    color: #f3efe6;
+    background: var(--midnight);
+    pointer-events: none;
+    visibility: hidden;                     /* hidden unless its animation runs */
+}
+
+.curtain-mark {
+    display: flex;
+    overflow: clip;
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: clamp(2.5rem, 7vw, 5rem);
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+}
+
+.curtain-mark span {
+    display: inline-block;
+}
+
+.curtain-mark span + span {
+    color: var(--mustard);
+}
+
+
+/* ---------- 15d. Motion ---------- */
+@media (prefers-reduced-motion: no-preference) {
+
+    /* the curtain: the wordmark rises, holds, then the whole curtain lifts away */
+    html:not(.curtain-seen) .curtain {
+        animation: curtain-lift 1.5s var(--ease-in-out) 0.15s both;
+    }
+
+    html:not(.curtain-seen) .curtain-mark span {
+        animation: mark-rise 0.9s var(--ease-out) both;
+    }
+
+    html:not(.curtain-seen) .curtain-mark span + span {
+        animation-delay: 0.08s;
+    }
+
+    @keyframes curtain-lift {
+        0%, 55% { visibility: visible; clip-path: inset(0 0 0 0); }
+        100%    { visibility: visible; clip-path: inset(0 0 100% 0); }
+    }
+
+    @keyframes mark-rise {
+        from { transform: translateY(110%); }
+        to   { transform: none; }
+    }
+
+    /* the opening's own entrance, timed to follow the curtain */
+    .opening .wordmark > span,
+    .opening .hero-meta,
+    .opening-manifesto,
+    .opening .scroll-cue {
+        animation: settle-in 1.2s var(--ease-out) both;
+        animation-delay: var(--intro-delay, 1.05s);
+    }
+
+    .opening .wm-track            { animation-delay: calc(var(--intro-delay, 1.05s) + 0.08s); }
+    .opening-manifesto            { animation-delay: calc(var(--intro-delay, 1.05s) + 0.2s); }
+    .opening .scroll-cue          { animation-delay: calc(var(--intro-delay, 1.05s) + 0.35s); }
+
+    html.curtain-seen {
+        --intro-delay: 0.05s;
+    }
+
+    .opening .wordmark > span {
+        display: inline-block;
+    }
+
+    @keyframes settle-in {
+        from { opacity: 0; transform: translateY(0.6em); }
+        to   { opacity: 1; transform: none; }
+    }
+
+    .film-toggle {
+        transition: background-color 0.3s, transform 0.4s var(--ease-out);
+    }
+
+    /* buttons answer the pointer with a soft brass glow */
+    .btn {
+        transition: background-color 0.25s, color 0.25s, box-shadow 0.4s var(--ease-out), transform 0.4s var(--ease-out);
+    }
+
+
+    /* ---------- scroll-driven choreography ---------- */
+    @supports (animation-timeline: view()) {
+
+        /* progress line under the top bar follows the whole page */
+        .scroll-progress {
+            animation: progress-grow linear both;
+            animation-timeline: scroll(root block);
+        }
+
+        @keyframes progress-grow {
+            to { transform: scaleX(1); }
+        }
+
+        /* THE OPENING STAGE
+           The section is 2.6 screens tall; its stage sticks to the top for the
+           whole of that distance, so the page seems to hold still while:
+             4%  - 48%  the manifesto lights up word by word
+             50% - 66%  the meta line, manifesto and cue lift away
+             52% - 92%  the film closes into a rounded window and the stage turns to paper
+             64% - 88%  the masthead turns from ivory to ink
+           Then the stage lets go and the first spread scrolls in. */
+        .opening {
+            height: 260svh;
+            view-timeline-name: --opening;
+        }
+
+        .opening-stage {
+            position: sticky;
+            top: 0;
+            height: 100svh;
+            animation: stage-to-paper linear both;
+            animation-timeline: --opening;
+            animation-range: contain 52% contain 92%;
+        }
+
+        .opening-film {
+            animation: film-to-window linear both;
+            animation-timeline: --opening;
+            animation-range: contain 52% contain 92%;
+        }
+
+        .opening-video {
+            animation: film-settle linear both;
+            animation-timeline: --opening;
+            animation-range: contain 0% contain 92%;
+        }
+
+        .opening-film::after {
+            animation: shade-lift linear both;
+            animation-timeline: --opening;
+            animation-range: contain 52% contain 80%;
+        }
+
+        .opening .hero-meta,
+        .opening-manifesto,
+        .opening .scroll-cue,
+        .film-toggle {
+            animation: settle-in 1.2s var(--ease-out) both, lift-away linear both;
+            animation-delay: var(--intro-delay, 1.05s), 0s;
+            animation-timeline: auto, --opening;
+            animation-range: normal, contain 50% contain 66%;
+        }
+
+        .opening .wordmark .wm-fin,
+        .opening .wordmark .wm-reg {
+            animation: settle-in 1.2s var(--ease-out) both, fin-to-ink linear both;
+            animation-delay: var(--intro-delay, 1.05s), 0s;
+            animation-timeline: auto, --opening;
+            animation-range: normal, contain 64% contain 88%;
+        }
+
+        .opening .wordmark .wm-track {
+            animation: settle-in 1.2s var(--ease-out) both, track-to-jade linear both;
+            animation-delay: calc(var(--intro-delay, 1.05s) + 0.08s), 0s;
+            animation-timeline: auto, --opening;
+            animation-range: normal, contain 64% contain 88%;
+        }
+
+        @keyframes stage-to-paper {
+            from { background-color: var(--midnight); }
+            to   { background-color: var(--paper); }
+        }
+
+        @keyframes film-to-window {
+            from { clip-path: inset(0 0 0 0 round 0); }
+            to   { clip-path: inset(calc(var(--topbar-h, 3.5rem) + 1rem) 3.5cqi calc(13.2cqi + 2.25rem) 3.5cqi round 1.75rem); }
+        }
+
+        @keyframes film-settle {
+            from { transform: scale(1.14); }
+            to   { transform: scale(1); }
+        }
+
+        @keyframes shade-lift {
+            to { opacity: 0.25; }
+        }
+
+        @keyframes lift-away {
+            to { opacity: 0; transform: translateY(-3rem); visibility: hidden; }
+        }
+
+        @keyframes fin-to-ink {
+            to { color: var(--ink); }
+        }
+
+        @keyframes track-to-jade {
+            to { color: var(--teal-dark); }
+        }
+
+        /* WORDS THAT LIGHT UP AS YOU READ (js/motion.js wraps each word in .w and
+           numbers it --i of --n). Each word gets its own slice of the scroll. */
+        .is-split .w {
+            animation: word-light linear both;
+        }
+
+        /* each word's animation-range is set by js/motion.js from data-scroll-words */
+        .opening-manifesto.is-split .w {
+            --dim: rgba(243, 239, 230, 0.4);
+            animation-timeline: --opening;
+        }
+
+        .statement.is-split {
+            view-timeline-name: --statement;
+        }
+
+        .statement.is-split .w {
+            --dim: color-mix(in srgb, currentColor 32%, transparent);
+            animation-timeline: --statement;
+        }
+
+        @keyframes word-light {
+            from { color: var(--dim); }
+        }
+
+        /* MASKED LINES: headings rise out from behind their own baseline */
+        .chapter-head h2 {
+            view-timeline-name: --head;
+        }
+
+        .chapter-head h2 .lift {
+            animation: lift-in linear both;
+            animation-timeline: --head;
+            animation-range: entry 30% cover 40%;
+        }
+
+        .hero-tagline {
+            view-timeline-name: --tagline;
+        }
+
+        .hero-tagline .lift {
+            animation: lift-in linear both;
+            animation-timeline: --tagline;
+        }
+
+        .hero-tagline .line:nth-child(1) .lift { animation-range: entry 10% cover 30%; }
+        .hero-tagline .line:nth-child(2) .lift { animation-range: entry 25% cover 38%; }
+        .hero-tagline .line:nth-child(3) .lift { animation-range: entry 40% cover 46%; }
+
+        @keyframes lift-in {
+            from { transform: translateY(105%) rotate(2.5deg); animation-timing-function: var(--ease-out); }
+            to   { transform: none; }
+        }
+
+        /* the coin rolls in */
+        .coin {
+            animation: coin-roll linear both;
+            animation-timeline: view();
+            animation-range: entry 0% cover 40%;
+        }
+
+        @keyframes coin-roll {
+            from { transform: translateX(30%) rotate(120deg) scale(0.7); opacity: 0; animation-timing-function: var(--ease-out); }
+            to   { transform: none; opacity: 1; }
+        }
+
+        /* giant outlined chapter numbers drift slower than the page (parallax) */
+        .chapter-num {
+            animation: num-drift linear both;
+            animation-timeline: view();
+            animation-range: cover;
+        }
+
+        @keyframes num-drift {
+            from { translate: 0 40%; }
+            to   { translate: 0 -60%; }
+        }
+
+        /* EARN / SPEND / SAVE: the strip now moves with the scroll, not on its own */
+        .marquee-track {
+            animation: strip-glide linear both;
+            animation-timeline: view();
+            animation-range: cover;
+        }
+
+        @keyframes strip-glide {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-30%); }
+        }
+
+        /* COLOURED CHAPTERS ARRIVE ON A DIAGONAL that straightens as they settle */
+        .spending,
+        .calc-section,
+        .footer {
+            animation: diagonal-in linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 40%;
+        }
+
+        @keyframes diagonal-in {
+            from { clip-path: polygon(0 9vw, 100% 0, 100% 100%, 0 100%); }
+            to   { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+        }
+
+        /* Lab 2's reveal, eased: a longer, softer settle */
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(56px) scale(0.985); animation-timing-function: var(--ease-out); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        /* stat rows and tracker panels arrive one after another */
+        .numbers > div,
+        .trk-stats > div,
+        .trk-insight,
+        .trk-card,
+        .trk-panel,
+        .holding {
+            animation: reveal linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 55%;
+        }
+
+        .numbers > div:nth-child(2), .trk-stats > div:nth-child(2), .trk-insight:nth-child(2) { animation-range: entry 8%  entry 63%; }
+        .numbers > div:nth-child(3), .trk-stats > div:nth-child(3), .trk-insight:nth-child(3) { animation-range: entry 16% entry 71%; }
+        .numbers > div:nth-child(4), .trk-stats > div:nth-child(4), .trk-insight:nth-child(4) { animation-range: entry 24% entry 79%; }
+        .trk-stats > div:nth-child(5) { animation-range: entry 32% entry 87%; }
+    }
+}
+
+/* changing the tracker's month cross-fades just the tracker (View Transitions API) */
+.trk-app {
+    view-transition-name: tracker-app;
+}
+
+::view-transition-old(tracker-app),
+::view-transition-new(tracker-app) {
+    animation-duration: 0.35s;
+    animation-timing-function: var(--ease-out);
+}
+
+/* hover-only polish (mouse users; Lab 2's rule: hover lives behind hover: hover) */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px -14px rgba(var(--glow), 0.9);
+    }
+
+    .film-toggle:hover {
+        transform: scale(1.08);
+        background: rgba(8, 17, 31, 0.7);
+    }
+}
+
+
+/* ---------- 15e. Contexts for the new pieces ---------- */
+@media (width < 40rem) {
+    .opening-manifesto.intro {
+        grid-column: 1 / -1;
+        margin: 1.5rem 0;
+    }
+
+    .opening .hero-meta span:nth-child(n + 3) {
+        display: none;                      /* two labels are enough on a phone */
+    }
+}
+
+@media (prefers-contrast: more) {
+    .opening-film::after {
+        background: rgba(8, 17, 31, 0.78);
+    }
+
+    .opening-manifesto.is-split .w,
+    .statement.is-split .w {
+        animation: none !important;          /* never show dimmed words */
+    }
+}
+
+@media (forced-colors: active) {
+    .opening-film,
+    .curtain {
+        display: none;
+    }
+
+    .opening,
+    .opening-stage {
+        background: Canvas;
+        color: CanvasText;
+    }
+
+    .opening .wm-fin,
+    .opening .wm-track {
+        color: CanvasText;
+    }
+}
+
+@media print {
+    .curtain,
+    .opening-film,
+    .film-toggle,
+    .scroll-progress,
+    .opening .scroll-cue {
+        display: none !important;
+    }
+
+    .opening,
+    .opening-stage {
+        height: auto !important;
+        min-height: 0 !important;
+        color: #000;
+        background: none !important;
+        animation: none !important;
+    }
+
+    .opening-copy {
+        min-height: 0;
+        padding: 0;
+    }
+
+    .opening .hero-meta,
+    .opening .wm-fin,
+    .opening .wm-track,
+    .opening .wm-reg {
+        color: #000 !important;
+    }
+
+    .opening .wordmark {
+        font-size: 28pt;
+    }
+}

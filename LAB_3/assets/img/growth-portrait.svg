@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 760" role="img" aria-labelledby="t d">
+  <title id="t">Small steps add up</title>
+  <desc id="d">A large rupee coin with a rising line crossing it: the portfolio passed two lakh rupees in October 2026.</desc>
+  <rect width="600" height="760" fill="#16304f"/>
+  <g stroke="#efe8d8" stroke-opacity=".08" stroke-width="2"><path d="M0 95H600M0 190H600M0 285H600M0 380H600M0 475H600M0 570H600M0 665H600"/></g>
+  <circle cx="300" cy="290" r="180" fill="#1f8a70"/>
+  <circle cx="300" cy="290" r="196" fill="none" stroke="#efe8d8" stroke-width="3" stroke-dasharray="10 12"/>
+  <text x="300" y="352" font-family="Georgia,'Times New Roman',serif" font-size="230" font-weight="700" fill="#efe8d8" fill-opacity=".92" text-anchor="middle">₹</text>
+  <path d="M60 470 L170 420 250 438 340 330 430 352 540 215" fill="none" stroke="#d9a21b" stroke-width="18" stroke-linejoin="round" stroke-linecap="round"/>
+  <circle cx="540" cy="215" r="17" fill="#efe8d8" stroke="#d9a21b" stroke-width="7"/>
+  <g fill="#efe8d8" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-weight="700">
+    <text x="300" y="580" font-size="46">SMALL STEPS</text>
+    <text x="300" y="636" font-size="46">ADD UP</text>
+  </g>
+  <text x="300" y="695" font-family="'Courier New',monospace" font-size="21" letter-spacing="2" fill="#d9a21b" text-anchor="middle">OCT 2026 · PAST ₹2 LAKH</text>
+</svg>

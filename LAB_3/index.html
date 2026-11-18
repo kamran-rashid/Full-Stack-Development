@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="FinTrack - a personal wealth journal. Spending, a transaction tracker with budget forecasts, investments and a compound-interest calculator, told as a story (demo data). HTML and CSS, with JavaScript for the tracker.">
+    <meta name="color-scheme" content="light dark">
+    <title>FinTrack - A Personal Wealth Journal</title>
+    <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+    <!-- the opening curtain plays once per visit; this runs before the first paint so it never flashes -->
+    <script>try { if (sessionStorage.getItem("fintrack.curtain")) document.documentElement.classList.add("curtain-seen"); sessionStorage.setItem("fintrack.curtain", "1"); } catch (e) {}</script>
+</head>
+
+<body id="top">
+    <!-- decorative intro curtain (Lab 3 visual refresh): CSS only, gone after ~1.6 s -->
+    <div class="curtain" aria-hidden="true"><span class="curtain-mark"><span>Fin</span><span>Track</span></span></div>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <!-- ================= HEADER + NAVIGATION ================= -->
+    <header class="topbar">
+        <span class="scroll-progress" aria-hidden="true"></span>
+        <a class="brand" href="#top">FinTrack<sup>&reg;</sup></a>
+        <nav aria-label="Chapters">
+            <ul>
+                <li><a class="nav-link" href="#overview"><span>01</span>Overview</a></li>
+                <li><a class="nav-link" href="#spending"><span>02</span>Spending</a></li>
+                <li><a class="nav-link" href="#tracker"><span>03</span>Tracker</a></li>
+                <li><a class="nav-link" href="#investments"><span>04</span>Investments</a></li>
+                <li><a class="nav-link" href="#calculator"><span>05</span>Calculator</a></li>
+                <li><a class="nav-link" href="#closing"><span>06</span>Closing</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main id="main-content">
+
+        <!-- shown only when the page is printed: the letterhead of the monthly statement -->
+        <div class="print-head print-only">
+            <p class="eyebrow">FinTrack&reg; &middot; Monthly statement</p>
+            <h2>Statement for November 2026</h2>
+            <p>Prepared for: a demo reader &middot; Bengaluru &middot; all amounts in INR (&#8377;) &middot; every figure is demonstration data</p>
+        </div>
+
+        <!-- ================= HERO ================= -->
+        <!-- ================= OPENING FILM (Lab 3 visual refresh) =================
+             A full-screen film opens the issue. Where the browser supports scroll-driven
+             animation, this section is tall and its stage is pinned (position: sticky):
+             as you scroll, the manifesto lights up word by word and the film closes into
+             a framed window before the page moves on. Everywhere else it is one still screen. -->
+        <section class="opening" id="opening" aria-labelledby="masthead">
+            <span class="film-sentinel" aria-hidden="true"></span>
+            <div class="opening-stage">
+                <div class="opening-film" aria-hidden="true">
+                    <!-- no autoplay attribute: js/motion.js starts it only when motion is welcome -->
+                    <video class="opening-video" muted loop playsinline preload="metadata" poster="assets/img/opening-poster.jpg">
+                        <source src="assets/video/opening-loop.webm" type="video/webm">
+                        <source src="assets/video/opening-loop.mp4" type="video/mp4">
+                    </video>
+                </div>
+
+                <div class="wrap opening-copy">
+                    <p class="hero-meta eyebrow">
+                        <span>Vol. 01 &mdash; November 2026</span>
+                        <span>A personal wealth journal</span>
+                        <span>Bengaluru &middot; INR &#8377;</span>
+                        <span>Demo edition</span>
+                    </p>
+
+                    <div class="wordmark-box opening-mark">
+                        <h1 class="wordmark" id="masthead"><span class="wm-fin">Fin</span><span class="wm-track">Track</span><sup class="wm-reg" aria-hidden="true">&reg;</sup></h1>
+                    </div>
+
+                    <p class="intro opening-manifesto" data-scroll-words="contain 4 48">
+                        FinTrack is a wealth journal, not a spreadsheet with ambitions. Every month we read your
+                        money back to you: what came in, where it slipped away, what it is quietly becoming.
+                        Then you get to play with what happens next.
+                    </p>
+
+                    <p class="scroll-cue eyebrow">Scroll to read the first issue <span aria-hidden="true">&darr;</span></p>
+                </div>
+
+                <button class="film-toggle" type="button" aria-pressed="false" hidden>
+                    <span class="vh">Pause the background film</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= HERO: the first spread ================= -->
+        <section class="hero">
+            <div class="wrap">
+                <div class="hero-story">
+                    <p class="hero-tagline">
+                        <span class="line"><span class="lift">Your money</span></span>
+                        <span class="line line-2"><span class="lift">has a</span></span>
+                        <span class="line"><span class="lift"><em class="squiggle">story.</em></span></span>
+                    </p>
+
+                    <div class="coin" aria-hidden="true">
+                        &#8377;
+                        <div class="sticker">100% demo data<br>0% real money</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PHONE CONTEXT: the three numbers a phone user opens the app for. Hidden on larger screens. -->
+        <aside class="glance" aria-label="This month at a glance">
+            <a href="#spending">
+                <span class="eyebrow"><span class="lbl-left">Left this month</span><span class="lbl-deficit">Over total budget by</span></span>
+                <strong><span class="inr" style="--n: var(--left-abs)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></strong>
+            </a>
+            <a href="#spending">
+                <span class="eyebrow">Categories over budget</span>
+                <strong class="oc"></strong>
+            </a>
+            <a href="#investments">
+                <span class="eyebrow">Invested</span>
+                <strong>&#8377;2,35,000</strong>
+            </a>
+        </aside>
+
+        <!-- decorative moving strip -->
+        <div class="marquee" aria-hidden="true">
+            <div class="marquee-track">
+                <div class="marquee-group">
+                    <span>Earn</span><span>&#10038;</span><span>Spend</span><span>&#10038;</span><span>Save</span><span>&#10038;</span><span>Invest</span><span>&#10038;</span><span>Repeat</span><span>&#10038;</span>
+                    <span>Earn</span><span>&#10038;</span><span>Spend</span><span>&#10038;</span><span>Save</span><span>&#10038;</span><span>Invest</span><span>&#10038;</span><span>Repeat</span><span>&#10038;</span>
+                </div>
+                <div class="marquee-group">
+                    <span>Earn</span><span>&#10038;</span><span>Spend</span><span>&#10038;</span><span>Save</span><span>&#10038;</span><span>Invest</span><span>&#10038;</span><span>Repeat</span><span>&#10038;</span>
+                    <span>Earn</span><span>&#10038;</span><span>Spend</span><span>&#10038;</span><span>Save</span><span>&#10038;</span><span>Invest</span><span>&#10038;</span><span>Repeat</span><span>&#10038;</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CHAPTER 01: OVERVIEW ================= -->
+        <section class="chapter" id="overview">
+            <div class="wrap">
+
+                <div class="chapter-head">
+                    <span class="chapter-num" aria-hidden="true">01</span>
+                    <p class="eyebrow">Chapter 01 / 05 &mdash; The overview</p>
+                    <h2><span class="lift">Where you <em>stand.</em></span></h2>
+                    <p class="lede">Forget tiles and gauges. Here is your month, in plain sentences.</p>
+                </div>
+
+                <p class="statement reveal" data-scroll-words="cover 18 50">
+                    This month, <mark>&#8377;65,000</mark> came in. <mark class="out">&#8377;32,400</mark> went out.
+                    What stayed behind, <mark>&#8377;32,600</mark>, is the part that quietly builds your future.
+                </p>
+
+                <div class="flow reveal">
+                    <div class="flow-bar draw-x" role="img" aria-label="Of the 65,000 rupees earned, about 50 percent was spent and 50 percent was kept">
+                        <div class="flow-spent" style="--w: 49.85"><span>Spent 50%</span></div>
+                        <div class="flow-kept" style="--w: 50.15"><span>Kept 50%</span></div>
+                    </div>
+                    <p class="flow-caption eyebrow">
+                        <span class="hint-mouse">A savings rate of 50%. Hover the bar. It likes attention.</span>
+                        <span class="hint-touch">A savings rate of 50%: &#8377;32,400 spent, &#8377;32,600 kept.</span>
+                    </p>
+                </div>
+
+                <dl class="numbers reveal">
+                    <div>
+                        <dt>Account balance</dt>
+                        <dd class="big">&#8377;1,84,500</dd>
+                        <dd class="note">Cash across savings and current accounts.</dd>
+                    </div>
+                    <div>
+                        <dt>Monthly income</dt>
+                        <dd class="big">&#8377;65,000</dd>
+                        <dd class="note">Salary, plus a little freelance.</dd>
+                    </div>
+                    <div class="is-spend">
+                        <dt>Monthly expenses</dt>
+                        <dd class="big">&#8377;32,400</dd>
+                        <dd class="note">Roughly half of what came in.</dd>
+                    </div>
+                    <div>
+                        <dt>Investment value</dt>
+                        <dd class="big">&#8377;2,35,000</dd>
+                        <dd class="note">Funds, stocks and one very patient <abbr title="Fixed deposit">FD</abbr>.</dd>
+                    </div>
+                </dl>
+
+                <div class="duo">
+                    <figure class="savings reveal">
+                        <figcaption class="eyebrow">What you kept, month by month</figcaption>
+                        <div class="cols" role="img" aria-label="Savings from June to November: 24,000; 27,500; 31,000; 29,800; 33,200; 32,600 rupees">
+                            <div class="col"><div class="stack"><span class="val">24k</span><i style="--h: 63.6%"></i></div><span class="mon eyebrow">Jun</span></div>
+                            <div class="col"><div class="stack"><span class="val">27.5k</span><i style="--h: 72.9%"></i></div><span class="mon eyebrow">Jul</span></div>
+                            <div class="col"><div class="stack"><span class="val">31k</span><i style="--h: 82.2%"></i></div><span class="mon eyebrow">Aug</span></div>
+                            <div class="col"><div class="stack"><span class="val">29.8k</span><i style="--h: 79%"></i></div><span class="mon eyebrow">Sep</span></div>
+                            <div class="col"><div class="stack"><span class="val">33.2k</span><i style="--h: 88%"></i></div><span class="mon eyebrow">Oct</span></div>
+                            <div class="col now"><div class="stack"><span class="val">32.6k</span><i style="--h: 86.4%"></i></div><span class="mon eyebrow">Nov</span></div>
+                        </div>
+                    </figure>
+
+                    <aside class="wealth reveal" aria-label="Total wealth">
+                        <p class="eyebrow">Total wealth</p>
+                        <p class="wealth-num">&#8377;4,19,500</p>
+                        <div class="split" role="img" aria-label="44 percent cash and 56 percent invested">
+                            <span style="--w: 44">Cash 44%</span>
+                            <span style="--w: 56">Invested 56%</span>
+                        </div>
+                        <ul>
+                            <li><span>Account balance</span><strong>&#8377;1,84,500</strong></li>
+                            <li><span>Investments</span><strong>&#8377;2,35,000</strong></li>
+                        </ul>
+                    </aside>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= CHAPTER 02: SPENDING ================= -->
+        <section class="chapter spending" id="spending">
+            <div class="wrap">
+
+                <div class="chapter-head">
+                    <span class="chapter-num" aria-hidden="true">02</span>
+                    <p class="eyebrow">Chapter 02 / 05 &mdash; The spending</p>
+                    <h2><span class="lift">Where it <em>went.</em></span></h2>
+                    <p class="lede">Money leaves quietly. Here it is, caught in the act.</p>
+                </div>
+
+                <div class="spend-grid">
+
+                    <div class="donut-wrap reveal">
+                        <div class="donut" role="img" aria-label="Donut chart of spending by category; the figures are in the ledger beside it">
+                            <div class="donut-centre">
+                                <span class="eyebrow">Spent</span>
+                                <strong><span class="inr" style="--n: var(--TS)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></strong>
+                            </div>
+                        </div>
+                        <p class="donut-note"><span class="big big1">Housing</span><span class="big big2">Groceries</span><span class="big big3">Shopping</span><span class="big big4">Dining out</span><span class="big big5">Bills and subscriptions</span><span class="big big6">Transport</span><span class="big big7">Everything else</span> takes the biggest slice.</p>
+                    </div>
+
+                    <div>
+                        <p class="ledger-intro">
+                            Budgets are promises. Change any figure in the ledger below and the whole picture
+                            redraws itself, including the donut.
+                        </p>
+
+                        <p class="ledger-key eyebrow">
+                            <span><i class="key-limit"></i>Budget limit</span>
+                            <span><i class="key-over"></i>Spent beyond the limit</span>
+                        </p>
+
+                        <!-- method="dialog" makes the form harmless: pressing Enter on a radio cannot reload the page.
+                             type="reset" is a native control that puts every radio back to its default. -->
+                        <form class="ledger-form" method="dialog" aria-label="Budget ledger">
+                            <ul class="ledger">
+                            <li class="ledger-row" style="--c: var(--cat1); --B: var(--B1); --S: var(--S1); --O: var(--O1); --sh: var(--sh1)">
+                                <div class="row-name"><span class="swatch" aria-hidden="true"></span><h3>Housing</h3><span class="share"></span></div>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Housing: </span>Budget &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="b1" id="b1-0" value="10000"><label for="b1-0">10,000</label>
+                                    <input type="radio" name="b1" id="b1-1" value="11000"><label for="b1-1">11,000</label>
+                                    <input type="radio" name="b1" id="b1-2" value="12000" checked><label for="b1-2">12,000</label>
+                                    <input type="radio" name="b1" id="b1-3" value="13000"><label for="b1-3">13,000</label>
+                                    <input type="radio" name="b1" id="b1-4" value="14000"><label for="b1-4">14,000</label>
+                                    </div>
+                                </fieldset>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Housing: </span>Spent &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="s1" id="s1-0" value="10000"><label for="s1-0">10,000</label>
+                                    <input type="radio" name="s1" id="s1-1" value="11000"><label for="s1-1">11,000</label>
+                                    <input type="radio" name="s1" id="s1-2" value="12000" checked><label for="s1-2">12,000</label>
+                                    <input type="radio" name="s1" id="s1-3" value="13000"><label for="s1-3">13,000</label>
+                                    <input type="radio" name="s1" id="s1-4" value="14000"><label for="s1-4">14,000</label>
+                                    </div>
+                                </fieldset>
+                                <div class="row-meter">
+                                    <div class="meter" role="img" aria-label="Housing: money spent against the budget limit (figures in the status line)"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div>
+                                    <p class="status">
+                                        <span class="st-ok"><span class="inr" style="--n: var(--spare)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> to spare</span>
+                                        <span class="st-bad"><strong class="badge">&#9650; Over budget</strong><span><span class="inr" style="--n: var(--O)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> over the limit</span></span>
+                                    </p>
+                                    <p class="print-only values">Budget <span class="inr" style="--n: var(--B)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> &middot; Spent <span class="inr" style="--n: var(--S)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></p>
+                                </div>
+                            </li>
+                            <li class="ledger-row" style="--c: var(--cat2); --B: var(--B2); --S: var(--S2); --O: var(--O2); --sh: var(--sh2)">
+                                <div class="row-name"><span class="swatch" aria-hidden="true"></span><h3>Groceries</h3><span class="share"></span></div>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Groceries: </span>Budget &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="b2" id="b2-0" value="5000"><label for="b2-0">5,000</label>
+                                    <input type="radio" name="b2" id="b2-1" value="5500"><label for="b2-1">5,500</label>
+                                    <input type="radio" name="b2" id="b2-2" value="6000" checked><label for="b2-2">6,000</label>
+                                    <input type="radio" name="b2" id="b2-3" value="6500"><label for="b2-3">6,500</label>
+                                    <input type="radio" name="b2" id="b2-4" value="7000"><label for="b2-4">7,000</label>
+                                    </div>
+                                </fieldset>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Groceries: </span>Spent &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="s2" id="s2-0" value="4800"><label for="s2-0">4,800</label>
+                                    <input type="radio" name="s2" id="s2-1" value="5200"><label for="s2-1">5,200</label>
+                                    <input type="radio" name="s2" id="s2-2" value="5600" checked><label for="s2-2">5,600</label>
+                                    <input type="radio" name="s2" id="s2-3" value="6000"><label for="s2-3">6,000</label>
+                                    <input type="radio" name="s2" id="s2-4" value="6400"><label for="s2-4">6,400</label>
+                                    </div>
+                                </fieldset>
+                                <div class="row-meter">
+                                    <div class="meter" role="img" aria-label="Groceries: money spent against the budget limit (figures in the status line)"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div>
+                                    <p class="status">
+                                        <span class="st-ok"><span class="inr" style="--n: var(--spare)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> to spare</span>
+                                        <span class="st-bad"><strong class="badge">&#9650; Over budget</strong><span><span class="inr" style="--n: var(--O)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> over the limit</span></span>
+                                    </p>
+                                    <p class="print-only values">Budget <span class="inr" style="--n: var(--B)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> &middot; Spent <span class="inr" style="--n: var(--S)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></p>
+                                </div>
+                            </li>
+                            <li class="ledger-row" style="--c: var(--cat3); --B: var(--B3); --S: var(--S3); --O: var(--O3); --sh: var(--sh3)">
+                                <div class="row-name"><span class="swatch" aria-hidden="true"></span><h3>Shopping</h3><span class="share"></span></div>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Shopping: </span>Budget &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="b3" id="b3-0" value="3000"><label for="b3-0">3,000</label>
+                                    <input type="radio" name="b3" id="b3-1" value="3500"><label for="b3-1">3,500</label>
+                                    <input type="radio" name="b3" id="b3-2" value="4000" checked><label for="b3-2">4,000</label>
+                                    <input type="radio" name="b3" id="b3-3" value="4500"><label for="b3-3">4,500</label>
+                                    <input type="radio" name="b3" id="b3-4" value="5000"><label for="b3-4">5,000</label>
+                                    </div>
+                                </fieldset>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Shopping: </span>Spent &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="s3" id="s3-0" value="3500"><label for="s3-0">3,500</label>
+                                    <input type="radio" name="s3" id="s3-1" value="4000"><label for="s3-1">4,000</label>
+                                    <input type="radio" name="s3" id="s3-2" value="4500" checked><label for="s3-2">4,500</label>
+                                    <input type="radio" name="s3" id="s3-3" value="5000"><label for="s3-3">5,000</label>
+                                    <input type="radio" name="s3" id="s3-4" value="5500"><label for="s3-4">5,500</label>
+                                    </div>
+                                </fieldset>
+                                <div class="row-meter">
+                                    <div class="meter" role="img" aria-label="Shopping: money spent against the budget limit (figures in the status line)"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div>
+                                    <p class="status">
+                                        <span class="st-ok"><span class="inr" style="--n: var(--spare)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> to spare</span>
+                                        <span class="st-bad"><strong class="badge">&#9650; Over budget</strong><span><span class="inr" style="--n: var(--O)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> over the limit</span></span>
+                                    </p>
+                                    <p class="print-only values">Budget <span class="inr" style="--n: var(--B)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> &middot; Spent <span class="inr" style="--n: var(--S)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></p>
+                                </div>
+                            </li>
+                            <li class="ledger-row" style="--c: var(--cat4); --B: var(--B4); --S: var(--S4); --O: var(--O4); --sh: var(--sh4)">
+                                <div class="row-name"><span class="swatch" aria-hidden="true"></span><h3>Dining out</h3><span class="share"></span></div>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Dining out: </span>Budget &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="b4" id="b4-0" value="2000"><label for="b4-0">2,000</label>
+                                    <input type="radio" name="b4" id="b4-1" value="2500"><label for="b4-1">2,500</label>
+                                    <input type="radio" name="b4" id="b4-2" value="3000" checked><label for="b4-2">3,000</label>
+                                    <input type="radio" name="b4" id="b4-3" value="3500"><label for="b4-3">3,500</label>
+                                    <input type="radio" name="b4" id="b4-4" value="4000"><label for="b4-4">4,000</label>
+                                    </div>
+                                </fieldset>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Dining out: </span>Spent &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="s4" id="s4-0" value="2400"><label for="s4-0">2,400</label>
+                                    <input type="radio" name="s4" id="s4-1" value="2800"><label for="s4-1">2,800</label>
+                                    <input type="radio" name="s4" id="s4-2" value="3200" checked><label for="s4-2">3,200</label>
+                                    <input type="radio" name="s4" id="s4-3" value="3600"><label for="s4-3">3,600</label>
+                                    <input type="radio" name="s4" id="s4-4" value="4000"><label for="s4-4">4,000</label>
+                                    </div>
+                                </fieldset>
+                                <div class="row-meter">
+                                    <div class="meter" role="img" aria-label="Dining out: money spent against the budget limit (figures in the status line)"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div>
+                                    <p class="status">
+                                        <span class="st-ok"><span class="inr" style="--n: var(--spare)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> to spare</span>
+                                        <span class="st-bad"><strong class="badge">&#9650; Over budget</strong><span><span class="inr" style="--n: var(--O)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> over the limit</span></span>
+                                    </p>
+                                    <p class="print-only values">Budget <span class="inr" style="--n: var(--B)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> &middot; Spent <span class="inr" style="--n: var(--S)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></p>
+                                </div>
+                            </li>
+                            <li class="ledger-row" style="--c: var(--cat5); --B: var(--B5); --S: var(--S5); --O: var(--O5); --sh: var(--sh5)">
+                                <div class="row-name"><span class="swatch" aria-hidden="true"></span><h3>Bills &amp; subscriptions</h3><span class="share"></span></div>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Bills and subscriptions: </span>Budget &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="b5" id="b5-0" value="2000"><label for="b5-0">2,000</label>
+                                    <input type="radio" name="b5" id="b5-1" value="2500"><label for="b5-1">2,500</label>
+                                    <input type="radio" name="b5" id="b5-2" value="3000" checked><label for="b5-2">3,000</label>
+                                    <input type="radio" name="b5" id="b5-3" value="3500"><label for="b5-3">3,500</label>
+                                    <input type="radio" name="b5" id="b5-4" value="4000"><label for="b5-4">4,000</label>
+                                    </div>
+                                </fieldset>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Bills and subscriptions: </span>Spent &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="s5" id="s5-0" value="2100"><label for="s5-0">2,100</label>
+                                    <input type="radio" name="s5" id="s5-1" value="2400"><label for="s5-1">2,400</label>
+                                    <input type="radio" name="s5" id="s5-2" value="2700" checked><label for="s5-2">2,700</label>
+                                    <input type="radio" name="s5" id="s5-3" value="3000"><label for="s5-3">3,000</label>
+                                    <input type="radio" name="s5" id="s5-4" value="3300"><label for="s5-4">3,300</label>
+                                    </div>
+                                </fieldset>
+                                <div class="row-meter">
+                                    <div class="meter" role="img" aria-label="Bills and subscriptions: money spent against the budget limit (figures in the status line)"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div>
+                                    <p class="status">
+                                        <span class="st-ok"><span class="inr" style="--n: var(--spare)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> to spare</span>
+                                        <span class="st-bad"><strong class="badge">&#9650; Over budget</strong><span><span class="inr" style="--n: var(--O)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> over the limit</span></span>
+                                    </p>
+                                    <p class="print-only values">Budget <span class="inr" style="--n: var(--B)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> &middot; Spent <span class="inr" style="--n: var(--S)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></p>
+                                </div>
+                            </li>
+                            <li class="ledger-row" style="--c: var(--cat6); --B: var(--B6); --S: var(--S6); --O: var(--O6); --sh: var(--sh6)">
+                                <div class="row-name"><span class="swatch" aria-hidden="true"></span><h3>Transport</h3><span class="share"></span></div>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Transport: </span>Budget &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="b6" id="b6-0" value="1500"><label for="b6-0">1,500</label>
+                                    <input type="radio" name="b6" id="b6-1" value="2000"><label for="b6-1">2,000</label>
+                                    <input type="radio" name="b6" id="b6-2" value="2500" checked><label for="b6-2">2,500</label>
+                                    <input type="radio" name="b6" id="b6-3" value="3000"><label for="b6-3">3,000</label>
+                                    <input type="radio" name="b6" id="b6-4" value="3500"><label for="b6-4">3,500</label>
+                                    </div>
+                                </fieldset>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Transport: </span>Spent &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="s6" id="s6-0" value="2000"><label for="s6-0">2,000</label>
+                                    <input type="radio" name="s6" id="s6-1" value="2200"><label for="s6-1">2,200</label>
+                                    <input type="radio" name="s6" id="s6-2" value="2400" checked><label for="s6-2">2,400</label>
+                                    <input type="radio" name="s6" id="s6-3" value="2600"><label for="s6-3">2,600</label>
+                                    <input type="radio" name="s6" id="s6-4" value="2800"><label for="s6-4">2,800</label>
+                                    </div>
+                                </fieldset>
+                                <div class="row-meter">
+                                    <div class="meter" role="img" aria-label="Transport: money spent against the budget limit (figures in the status line)"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div>
+                                    <p class="status">
+                                        <span class="st-ok"><span class="inr" style="--n: var(--spare)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> to spare</span>
+                                        <span class="st-bad"><strong class="badge">&#9650; Over budget</strong><span><span class="inr" style="--n: var(--O)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> over the limit</span></span>
+                                    </p>
+                                    <p class="print-only values">Budget <span class="inr" style="--n: var(--B)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> &middot; Spent <span class="inr" style="--n: var(--S)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></p>
+                                </div>
+                            </li>
+                            <li class="ledger-row" style="--c: var(--cat7); --B: var(--B7); --S: var(--S7); --O: var(--O7); --sh: var(--sh7)">
+                                <div class="row-name"><span class="swatch" aria-hidden="true"></span><h3>Everything else</h3><span class="share"></span></div>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Everything else: </span>Budget &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="b7" id="b7-0" value="1000"><label for="b7-0">1,000</label>
+                                    <input type="radio" name="b7" id="b7-1" value="1500"><label for="b7-1">1,500</label>
+                                    <input type="radio" name="b7" id="b7-2" value="2000" checked><label for="b7-2">2,000</label>
+                                    <input type="radio" name="b7" id="b7-3" value="2500"><label for="b7-3">2,500</label>
+                                    <input type="radio" name="b7" id="b7-4" value="3000"><label for="b7-4">3,000</label>
+                                    </div>
+                                </fieldset>
+                                <fieldset class="field">
+                                    <legend><span class="vh">Everything else: </span>Spent &#8377;</legend>
+                                    <div class="pills">
+                                    <input type="radio" name="s7" id="s7-0" value="1600"><label for="s7-0">1,600</label>
+                                    <input type="radio" name="s7" id="s7-1" value="1800"><label for="s7-1">1,800</label>
+                                    <input type="radio" name="s7" id="s7-2" value="2000" checked><label for="s7-2">2,000</label>
+                                    <input type="radio" name="s7" id="s7-3" value="2200"><label for="s7-3">2,200</label>
+                                    <input type="radio" name="s7" id="s7-4" value="2400"><label for="s7-4">2,400</label>
+                                    </div>
+                                </fieldset>
+                                <div class="row-meter">
+                                    <div class="meter" role="img" aria-label="Everything else: money spent against the budget limit (figures in the status line)"><span class="meter-fill"></span><span class="meter-over"></span><span class="meter-limit"></span></div>
+                                    <p class="status">
+                                        <span class="st-ok"><span class="inr" style="--n: var(--spare)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> to spare</span>
+                                        <span class="st-bad"><strong class="badge">&#9650; Over budget</strong><span><span class="inr" style="--n: var(--O)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> over the limit</span></span>
+                                    </p>
+                                    <p class="print-only values">Budget <span class="inr" style="--n: var(--B)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> &middot; Spent <span class="inr" style="--n: var(--S)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></p>
+                                </div>
+                            </li>
+                            </ul>
+
+                            <p class="over-summary" aria-live="polite">
+                                <span class="sum-ok">&#10003; Every category is within budget.</span>
+                                <span class="sum-bad">&#9650; <span class="oc"></span> <span class="one">category is</span><span class="many">categories are</span> over budget, by <span class="inr" style="--n: var(--over-total)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> in total.</span>
+                            </p>
+
+                            <div class="ledger-total" aria-live="polite">
+                                <div><span class="lbl">Total budget</span><strong><span class="inr" style="--n: var(--TB)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></strong></div>
+                                <div><span class="lbl">Total spent</span><strong><span class="inr" style="--n: var(--TS)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></strong></div>
+                                <div><span class="lbl"><span class="lbl-left">Left over</span><span class="lbl-deficit">Over total budget by</span></span><strong><span class="inr" style="--n: var(--left-abs)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></strong></div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="reset" class="btn secondary">Reset ledger</button>
+                            </div>
+                        </form>
+
+                        <!-- empty = "no problems" (a CSS :empty message); js/app.js adds possible double charges here -->
+                        <ul class="alerts" aria-label="Payment alerts"></ul>
+                    </div>
+                </div>
+
+                <!-- recent transactions, styled as a till receipt.
+                     These six entries are the no-JavaScript fallback; js/app.js replaces them with the
+                     six latest entries from the tracker in Chapter 03. -->
+                <div class="receipts">
+                    <div class="receipts-text reveal">
+                        <p class="eyebrow">Recent transactions</p>
+                        <h3>The last six entries in the <em>diary.</em></h3>
+                        <p>Every rupee leaves a paper trail. This is the short version of it.</p>
+                    </div>
+
+                    <aside class="receipt reveal" aria-label="Recent transactions">
+                        <p class="receipt-head">FinTrack Daily Ledger</p>
+                        <ol>
+                            <li><time datetime="2026-11-05">05 NOV</time><span>Monthly salary<small>Income</small></span><b class="in">+&#8377;65,000</b></li>
+                            <li><time datetime="2026-11-04">04 NOV</time><span>Apartment rent<small>Housing</small></span><b class="outgo">-&#8377;12,000</b></li>
+                            <li><time datetime="2026-11-03">03 NOV</time><span>Supermarket<small>Groceries</small></span><b class="outgo">-&#8377;2,150</b></li>
+                            <li><time datetime="2026-11-02">02 NOV</time><span>Electricity bill<small>Bills</small></span><b class="outgo">-&#8377;1,800</b></li>
+                            <li><time datetime="2026-11-01">01 NOV</time><span>Metro card recharge<small>Transport</small></span><b class="outgo">-&#8377;800</b></li>
+                            <li><time datetime="2026-10-31">31 OCT</time><span>Online shopping<small>Shopping</small></span><b class="outgo">-&#8377;3,200</b></li>
+                        </ol>
+                        <p class="receipt-foot">Demo data &middot; Thank you &middot; Keep the change</p>
+                    </aside>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= CHAPTER 03: TRACKER (Lab 3, JavaScript) =================
+             Everything inside this section is driven by js/*.js. The rest of the page
+             still works with CSS alone, so the tracker is the only part that needs JavaScript. -->
+        <section class="chapter tracker" id="tracker" aria-labelledby="tracker-title">
+            <div class="wrap">
+
+                <div class="chapter-head">
+                    <span class="chapter-num" aria-hidden="true">03</span>
+                    <p class="eyebrow">Chapter 03 / 05 &mdash; The tracker</p>
+                    <h2 id="tracker-title"><span class="lift">Where it&rsquo;s <em>going.</em></span></h2>
+                    <p class="lede">The ledger is the plan; this is the diary. Record what you spend, or import a bank statement, and FinTrack reads it back as patterns, warnings and a month-end forecast.</p>
+                </div>
+
+                <noscript><p class="trk-noscript">The tracker needs JavaScript. Every other chapter works without it.</p></noscript>
+
+                <div class="trk-app">
+
+                    <div class="trk-toolbar">
+                        <div class="trk-field trk-inline">
+                            <label for="trk-month" class="eyebrow">Showing</label>
+                            <select id="trk-month"></select>
+                        </div>
+                        <p class="trk-save eyebrow" id="trk-save"></p>
+                    </div>
+
+                    <dl class="trk-stats" id="trk-stats"></dl>
+
+                    <div class="trk-grid">
+
+                        <!-- ---------- input: the form and the importer ---------- -->
+                        <div class="trk-side">
+                            <form class="trk-card trk-form" id="trk-form" novalidate aria-labelledby="trk-form-title">
+                                <h3 id="trk-form-title">Record a transaction</h3>
+
+                                <!-- filled with every problem at once when a submit fails; takes focus -->
+                                <div class="trk-errors" id="trk-errors" tabindex="-1" role="alert" hidden></div>
+
+                                <fieldset class="trk-type">
+                                    <legend class="vh">Type of transaction</legend>
+                                    <input type="radio" name="type" id="trk-type-expense" value="expense" checked><label for="trk-type-expense">Money out</label>
+                                    <input type="radio" name="type" id="trk-type-income" value="income"><label for="trk-type-income">Money in</label>
+                                </fieldset>
+
+                                <div class="trk-field">
+                                    <label for="trk-desc">Description</label>
+                                    <input id="trk-desc" name="description" type="text" list="trk-known" maxlength="60" autocomplete="off" aria-describedby="trk-description-err" aria-required="true">
+                                    <datalist id="trk-known"></datalist>
+                                    <p class="trk-err" id="trk-description-err"></p>
+                                </div>
+
+                                <div class="trk-row">
+                                    <div class="trk-field">
+                                        <!-- type="text" + inputmode, not type="number": a number box returns "" for "1,200" or "₹500",
+                                             so "empty" and "wrong" could not be told apart. The script reads and explains the value instead. -->
+                                        <label for="trk-amount">Amount</label>
+                                        <input id="trk-amount" name="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 1,250" aria-describedby="trk-amount-err" aria-required="true">
+                                        <p class="trk-err" id="trk-amount-err"></p>
+                                    </div>
+                                    <div class="trk-field">
+                                        <label for="trk-currency">Currency</label>
+                                        <select id="trk-currency" name="currency"></select>
+                                    </div>
+                                </div>
+                                <p class="trk-rate" id="trk-rate" data-state="idle" aria-live="polite"></p>
+
+                                <div class="trk-row">
+                                    <div class="trk-field">
+                                        <label for="trk-date">Date</label>
+                                        <input id="trk-date" name="date" type="date" aria-describedby="trk-date-err" aria-required="true">
+                                        <p class="trk-err" id="trk-date-err"></p>
+                                    </div>
+                                    <div class="trk-field">
+                                        <label for="trk-category">Category</label>
+                                        <select id="trk-category" name="category" aria-describedby="trk-cat-hint trk-category-err"></select>
+                                        <p class="trk-err" id="trk-category-err"></p>
+                                    </div>
+                                </div>
+                                <p class="trk-hint" id="trk-cat-hint" aria-live="polite"></p>
+
+                                <div class="button-row">
+                                    <button class="btn" type="submit" id="trk-submit">Add transaction</button>
+                                    <button class="btn secondary" type="button" id="trk-cancel" hidden>Cancel edit</button>
+                                </div>
+                            </form>
+
+                            <section class="trk-card trk-import" aria-labelledby="trk-import-title">
+                                <h3 id="trk-import-title">Import a bank statement</h3>
+                                <p class="trk-small">A CSV with Date, Description and Amount (or Debit and Credit) columns. Two samples are in the <code>data</code> folder: a short one with mistakes in it, and a 5,500-row one.</p>
+                                <label class="trk-drop" id="trk-drop" for="trk-file">
+                                    <span class="trk-drop-text"><strong>Drop a .csv file here</strong> or click to choose one</span>
+                                    <input id="trk-file" type="file" accept=".csv,text/csv,text/plain">
+                                </label>
+                                <div class="trk-progress" id="trk-progress" hidden>
+                                    <progress id="trk-progress-bar" max="1" value="0" aria-labelledby="trk-progress-text"></progress>
+                                    <span id="trk-progress-text" class="trk-small"></span>
+                                    <button class="btn secondary" type="button" id="trk-import-cancel">Cancel</button>
+                                </div>
+                                <div class="trk-preview" id="trk-preview" hidden></div>
+                            </section>
+                        </div>
+
+                        <!-- ---------- output: budget check and insights ---------- -->
+                        <div class="trk-main">
+                            <section class="trk-panel" aria-labelledby="trk-budget-title">
+                                <h3 id="trk-budget-title">Budget check</h3>
+                                <p class="trk-small" id="trk-budget-sub"></p>
+                                <div id="trk-budget"></div>
+                            </section>
+
+                            <section class="trk-panel" aria-labelledby="trk-insights-title">
+                                <h3 id="trk-insights-title" tabindex="-1">What the numbers say</h3>
+                                <div class="trk-insights" id="trk-insights"></div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- ---------- the transactions themselves ---------- -->
+                    <section class="trk-panel trk-list" aria-labelledby="trk-list-title">
+                        <div class="trk-list-head">
+                            <h3 id="trk-list-title">Transactions</h3>
+                            <p class="eyebrow" id="trk-count" aria-live="polite"></p>
+                        </div>
+
+                        <div class="trk-filters" role="search" aria-label="Filter transactions">
+                            <div class="trk-field trk-search">
+                                <label for="trk-search">Search</label>
+                                <input id="trk-search" type="search" placeholder="Description, category or amount" autocomplete="off">
+                            </div>
+                            <div class="trk-field">
+                                <label for="trk-type-filter">Show</label>
+                                <select id="trk-type-filter">
+                                    <option value="all">Money in and out</option>
+                                    <option value="expense">Money out</option>
+                                    <option value="income">Money in</option>
+                                </select>
+                            </div>
+                            <div class="trk-field">
+                                <label for="trk-sort">Sort by</label>
+                                <select id="trk-sort">
+                                    <option value="date-desc">Newest first</option>
+                                    <option value="date-asc">Oldest first</option>
+                                    <option value="amount-desc">Largest amount</option>
+                                    <option value="amount-asc">Smallest amount</option>
+                                </select>
+                            </div>
+                            <fieldset class="trk-chips" id="trk-chips"></fieldset>
+                            <button type="button" class="btn secondary" id="trk-clear-filters">Clear filters</button>
+                        </div>
+
+                        <div class="trk-table-wrap">
+                            <table class="trk-table trk-tx-table">
+                                <caption class="vh">Transactions matching the filters</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Date</th>
+                                        <th scope="col">Description</th>
+                                        <th scope="col">Category</th>
+                                        <th scope="col" class="num">Amount</th>
+                                        <th scope="col"><span class="vh">Actions</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trk-rows"></tbody>
+                            </table>
+                        </div>
+                        <p class="trk-empty" id="trk-empty" hidden>Nothing matches these filters. <button type="button" class="trk-link">Clear filters</button></p>
+                        <button type="button" class="btn secondary trk-more" id="trk-more" hidden>Show more</button>
+
+                        <div class="button-row trk-data-actions">
+                            <button class="btn secondary" type="button" id="trk-export">Export CSV</button>
+                            <button class="btn secondary" type="button" id="trk-reset">Restore demo data</button>
+                            <button class="btn secondary is-danger" type="button" id="trk-clear">Delete all</button>
+                        </div>
+                    </section>
+
+                    <div class="trk-toast" id="trk-toast" role="status" aria-live="polite"></div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= CHAPTER 03: INVESTMENTS ================= -->
+        <section class="chapter" id="investments">
+            <div class="wrap">
+
+                <div class="chapter-head">
+                    <span class="chapter-num" aria-hidden="true">04</span>
+                    <p class="eyebrow">Chapter 04 / 05 &mdash; The investments</p>
+                    <h2><span class="lift">Where it <em>grows.</em></span></h2>
+                    <p class="lede">Three places your money goes to work, and how differently each one behaves.</p>
+                </div>
+
+                <div class="portfolio-total reveal">
+                    <strong>&#8377;2,35,000</strong>
+                    <span class="gain-pill">+&#8377;28,000 &middot; +13.5% overall</span>
+                </div>
+
+                <div class="alloc reveal" role="img" aria-label="Portfolio split: mutual funds 51 percent, stocks 28 percent, fixed deposits 21 percent">
+                    <div class="a-mf" style="--w: 51"><span class="eyebrow">Mutual funds</span><b>51%</b></div>
+                    <div class="a-st" style="--w: 28"><span class="eyebrow">Stocks</span><b>28%</b></div>
+                    <div class="a-fd" style="--w: 21"><span class="eyebrow"><abbr title="Fixed deposits">FDs</abbr></span><b>21%</b></div>
+                </div>
+
+                <div class="holdings">
+                    <article class="holding reveal">
+                        <p class="idx eyebrow">No. 01</p>
+                        <h3>Mutual funds</h3>
+                        <p class="tagline">The steady climber</p>
+                        <p class="desc">Index and flexi-cap funds, bought a little at a time and left alone.</p>
+                        <dl>
+                            <div><dt>Invested</dt><dd>&#8377;1,02,000</dd></div>
+                            <div><dt>Value today</dt><dd>&#8377;1,20,000</dd></div>
+                            <div><dt>Return</dt><dd class="up">+17.6%</dd></div>
+                            <div><dt>Risk</dt><dd><span class="dots risk-3" role="img" aria-label="Risk 3 out of 5"><i></i><i></i><i></i><i></i><i></i></span></dd></div>
+                        </dl>
+                    </article>
+
+                    <article class="holding reveal">
+                        <p class="idx eyebrow">No. 02</p>
+                        <h3>Stocks</h3>
+                        <p class="tagline">The restless one</p>
+                        <p class="desc">Direct equity: higher highs, sleepless lows, and strong opinions.</p>
+                        <dl>
+                            <div><dt>Invested</dt><dd>&#8377;58,000</dd></div>
+                            <div><dt>Value today</dt><dd>&#8377;65,000</dd></div>
+                            <div><dt>Return</dt><dd class="up">+12.1%</dd></div>
+                            <div><dt>Risk</dt><dd><span class="dots risk-5" role="img" aria-label="Risk 5 out of 5"><i></i><i></i><i></i><i></i><i></i></span></dd></div>
+                        </dl>
+                    </article>
+
+                    <article class="holding reveal">
+                        <p class="idx eyebrow">No. 03</p>
+                        <h3>Fixed deposits</h3>
+                        <p class="tagline">The sleeper</p>
+                        <p class="desc">Boring on purpose. Guaranteed on paper, and very good at doing nothing.</p>
+                        <dl>
+                            <div><dt>Invested</dt><dd>&#8377;47,000</dd></div>
+                            <div><dt>Value today</dt><dd>&#8377;50,000</dd></div>
+                            <div><dt>Return</dt><dd class="up">+6.4%</dd></div>
+                            <div><dt>Risk</dt><dd><span class="dots risk-1" role="img" aria-label="Risk 1 out of 5"><i></i><i></i><i></i><i></i><i></i></span></dd></div>
+                        </dl>
+                    </article>
+                </div>
+
+                <!-- A closer look: picture (art direction) + captioned video -->
+                <div class="market-media">
+                    <div class="market-copy">
+                        <p class="eyebrow">A closer look / Market movement</p>
+                        <h3>Growth is rarely a straight line.</h3>
+                        <p>Returns move up and down. A longer view helps put short-term changes in perspective.</p>
+                        <details class="risk-note">
+                            <summary>Show the risk note</summary>
+                            <p><strong>Before investing:</strong> market-linked returns are not guaranteed. Check the risk, time horizon and costs before making a decision.</p>
+                        </details>
+                    </div>
+
+                    <figure class="market-figure">
+                        <!-- Two different pictures, not two sizes: a wide milestone chart for landscape screens and a
+                             single-message poster for narrow or upright ones. -->
+                        <picture>
+                            <source media="(width < 40rem), (orientation: portrait)" srcset="assets/img/growth-portrait.svg" width="600" height="760">
+                            <img src="assets/img/growth-wide.svg" width="1200" height="420" alt="Illustration of the portfolio's uneven climb past two lakh rupees by October 2026.">
+                        </picture>
+                        <figcaption>Illustrative market movement. Not actual investment performance.</figcaption>
+                    </figure>
+
+                    <figure class="market-video">
+                        <video controls preload="none" poster="assets/img/video-poster.jpg" width="960" height="540">
+                            <source src="assets/video/market-growth.webm" type="video/webm">
+                            <source src="assets/video/market-growth.mp4" type="video/mp4">
+                            <track kind="captions" src="assets/captions/market-growth.vtt" srclang="en" label="English (two speakers)" default>
+                            <p>Your browser cannot play this video. Read the transcript below instead.</p>
+                        </video>
+                        <details class="transcript">
+                            <summary>Read the transcript</summary>
+                            <dl>
+                                <dt class="narrator">Narrator</dt><dd>Money does not grow in a straight line.</dd>
+                                <dt class="advisor">Advisor</dt><dd>Right. A fund can fall for months, and still finish the decade higher.</dd>
+                                <dt class="narrator">Narrator</dt><dd>So what should a saver watch?</dd>
+                                <dt class="advisor">Advisor</dt><dd>Time. &#8377;2,35,000, left alone at 10% for 10 years, becomes about &#8377;6 lakh.</dd>
+                                <dt class="narrator">Narrator</dt><dd>And money needed within three years?</dd>
+                                <dt class="advisor">Advisor</dt><dd>Keep that in a fixed deposit, not in shares.</dd>
+                                <dt class="narrator">Narrator</dt><dd>Small steps add up. These figures are demonstration data, not advice.</dd>
+                            </dl>
+                        </details>
+                        <figcaption>A 31-second chat about why returns fluctuate. Captions are on by default.</figcaption>
+                    </figure>
+                </div>
+
+                <div class="timeline-wrap reveal">
+                    <p class="eyebrow">How the portfolio got here</p>
+                    <ol class="timeline">
+                        <li><strong>Mar 2025</strong><p>First monthly <abbr title="Systematic Investment Plan">SIP</abbr> starts. Small, but it never misses.</p></li>
+                        <li><strong>Aug 2025</strong><p>First direct stock purchase. Nerves of jelly.</p></li>
+                        <li><strong>Jan 2026</strong><p>A fixed deposit joins, for balance.</p></li>
+                        <li><strong>Oct 2026</strong><p>The portfolio crosses &#8377;2 lakh.</p></li>
+                    </ol>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ================= CHAPTER 04: CALCULATOR ================= -->
+        <section class="calc-section" id="calculator">
+            <div class="wrap">
+
+                <div class="chapter-head">
+                    <span class="chapter-num" aria-hidden="true">05</span>
+                    <p class="eyebrow">Chapter 05 / 05 &mdash; The calculator</p>
+                    <h2><span class="lift">Now, the <em>future.</em></span></h2>
+                    <p class="lede">Compound interest is just patience with a formula. Try it with your own portfolio.</p>
+                </div>
+
+                <div class="calc-layout">
+
+                    <form class="calc-form" method="dialog" aria-labelledby="calc-title">
+                        <h3 id="calc-title">Let it compound</h3>
+                        <p class="formula">
+                            <span>A = P &times; (1 + r/n) ^ (n &times; t)</span>
+                            <button type="button" class="chip" popovertarget="gloss">What do P, r, n, t mean?</button>
+                        </p>
+
+                        <fieldset class="step field">
+                            <legend>Amount to invest (&#8377;)</legend>
+                            <div class="chips">
+                                <input type="radio" name="amount" id="amt-0" value="25000"><label for="amt-0">25,000</label>
+                                <input type="radio" name="amount" id="amt-1" value="50000"><label for="amt-1">50,000</label>
+                                <input type="radio" name="amount" id="amt-2" value="100000"><label for="amt-2">1,00,000</label>
+                                <input type="radio" name="amount" id="amt-3" value="235000" checked><label for="amt-3">2,35,000 &middot; my portfolio</label>
+                                <input type="radio" name="amount" id="amt-4" value="500000"><label for="amt-4">5,00,000</label>
+                                <input type="radio" name="amount" id="amt-5" value="1000000"><label for="amt-5">10,00,000</label>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="step field">
+                            <legend>Yearly return</legend>
+                            <div class="chips">
+                                <input type="radio" name="rate" id="rt-0" value="4"><label for="rt-0">4% Savings</label>
+                                <input type="radio" name="rate" id="rt-1" value="6.5"><label for="rt-1">6.5% <abbr title="Fixed deposit">FD</abbr></label>
+                                <input type="radio" name="rate" id="rt-2" value="10" checked><label for="rt-2">10% Balanced</label>
+                                <input type="radio" name="rate" id="rt-3" value="12"><label for="rt-3">12% Equity</label>
+                                <input type="radio" name="rate" id="rt-4" value="15"><label for="rt-4">15% High-risk</label>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="step field">
+                            <legend>Years</legend>
+                            <div class="chips">
+                                <input type="radio" name="years" id="yr-0" value="1"><label for="yr-0">1 yr</label>
+                                <input type="radio" name="years" id="yr-1" value="3"><label for="yr-1">3 yrs</label>
+                                <input type="radio" name="years" id="yr-2" value="5"><label for="yr-2">5 yrs</label>
+                                <input type="radio" name="years" id="yr-3" value="10" checked><label for="yr-3">10 yrs</label>
+                                <input type="radio" name="years" id="yr-4" value="15"><label for="yr-4">15 yrs</label>
+                                <input type="radio" name="years" id="yr-5" value="20"><label for="yr-5">20 yrs</label>
+                                <input type="radio" name="years" id="yr-6" value="30"><label for="yr-6">30 yrs</label>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="step field">
+                            <legend>Compounding</legend>
+                            <div class="chips">
+                                <input type="radio" name="frequency" id="cp-0" value="1" checked><label for="cp-0">Yearly</label>
+                                <input type="radio" name="frequency" id="cp-1" value="2"><label for="cp-1">Half-yearly</label>
+                                <input type="radio" name="frequency" id="cp-2" value="4"><label for="cp-2">Quarterly</label>
+                                <input type="radio" name="frequency" id="cp-3" value="12"><label for="cp-3">Monthly</label>
+                            </div>
+                        </fieldset>
+
+                        <div class="button-row">
+                            <button type="reset" class="btn secondary">Reset</button>
+                        </div>
+                    </form>
+
+                    <div class="forecast" aria-live="polite">
+                        <p class="plain">
+                            <strong><span class="inr" style="--n: var(--P)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></strong> left alone at <strong><span class="rate"></span></strong>
+                            for <strong><span class="yrs"></span></strong> becomes
+                            <strong><span class="inr" style="--nh: var(--fvh); --n: var(--fvr)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></strong>.
+                            That is <span class="inr" style="--nh: var(--gnh); --n: var(--gnr)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span> you never had to work for.
+                        </p>
+
+                        <dl class="stats">
+                            <div><dt>You put in</dt><dd><span class="inr" style="--n: var(--P)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></dd></div>
+                            <div><dt>Growth</dt><dd><span class="inr" style="--nh: var(--gnh); --n: var(--gnr)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></dd></div>
+                            <div><dt>Becomes</dt><dd><span class="inr" style="--nh: var(--fvh); --n: var(--fvr)"><i class="c7"></i><i class="c5"></i><i class="c3"></i><i class="c0"></i></span></dd></div>
+                        </dl>
+
+                        <ul class="notes" aria-label="Notes about this forecast">
+                            <li class="note-short">Shares can fall for years at a time. Under 5 years, treat this forecast as a best case, not a plan.</li>
+                            <li class="note-fd">Fixed deposit and savings rates reset when they renew. Holding the same rate for 20 years or more is unlikely.</li>
+                            <li class="note-stretch">15% a year is a stretch. Very few funds have kept that up for a decade.</li>
+                        </ul>
+
+                        <p class="chart-legend eyebrow">
+                            <span class="l-base">Your money</span>
+                            <span class="l-growth">Growth</span>
+                            <span class="mult"></span>
+                        </p>
+
+                        <div class="growth-chart" role="img" aria-label="Bar chart of the investment growing year by year. The three totals above give the exact figures.">
+                            <div class="bar" style="--i: 1"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 2"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 3"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 4"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 5"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 6"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 7"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 8"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 9"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 10"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 11"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 12"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 13"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 14"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 15"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 16"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 17"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 18"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 19"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 20"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 21"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 22"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 23"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 24"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 25"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 26"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 27"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 28"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 29"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                            <div class="bar" style="--i: 30"><span class="bar-base"></span><span class="bar-growth"></span></div>
+                        </div>
+                        <p class="axis eyebrow"><span>Year 1</span><span class="axis-end"></span></p>
+                    </div>
+
+                    <div id="gloss" class="gloss" popover>
+                        <h4>Reading the formula</h4>
+                        <dl>
+                            <dt>A</dt><dd>What you end up with.</dd>
+                            <dt>P</dt><dd>The amount you start with (the principal).</dd>
+                            <dt>r</dt><dd>The yearly return as a fraction: 10% is 0.10.</dd>
+                            <dt>n</dt><dd>How many times a year the interest is added: 1 for yearly, 12 for monthly.</dd>
+                            <dt>t</dt><dd>The number of years you leave it alone.</dd>
+                        </dl>
+                        <button type="button" class="btn secondary" popovertarget="gloss" popovertargetaction="hide">Close</button>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="footer" id="closing">
+        <div class="wrap">
+            <p class="eyebrow">Chapter 06 &mdash; The end (for now)</p>
+            <p class="footer-title">That was the issue. <em>See you next month.</em></p>
+
+            <div class="footer-cols">
+                <div>
+                    <h3>Read again</h3>
+                    <ul>
+                        <li><a href="#overview">01 &mdash; Where you stand</a></li>
+                        <li><a href="#spending">02 &mdash; Where it went</a></li>
+                        <li><a href="#tracker">03 &mdash; Where it&rsquo;s going</a></li>
+                        <li><a href="#investments">04 &mdash; Where it grows</a></li>
+                        <li><a href="#calculator">05 &mdash; The future</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>The fine print</h3>
+                    <ul class="fine-print">
+                        <li>Every figure here is demonstration data.</li>
+                        <li>Calculations are estimates, not financial advice.</li>
+                        <li>Before you invest for real: <a href="https://www.sebi.gov.in/">sebi.gov.in</a></li>
+                        <li>Say hi: <a href="mailto:hello@fintrack.example">hello@fintrack.example</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Credits</h3>
+                    <ul>
+                        <li>Written and built by hand in HTML, CSS and JavaScript.</li>
+                        <li>Typeset in system serif, sans and mono fonts.</li>
+                        <li>Chapters 01, 02, 04 and 05 need no JavaScript: CSS does their maths. The tracker (03) is plain JavaScript, with no libraries.</li>
+                        <li>Exchange rates: <a href="https://frankfurter.dev/">Frankfurter</a> (European Central Bank reference rates).</li>
+                        <li>Illustrations, video and captions: made for this project. Voices: <a href="https://huggingface.co/hexgrad/Kokoro-82M">Kokoro-82M</a> (Apache-2.0).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <a class="back-top eyebrow" href="#top">Back to the cover &uarr;</a>
+            <p>&copy; 2026 FinTrack. Vol. 01.</p>
+
+            <div class="wordmark-box" aria-hidden="true">
+                <p class="wordmark"><span class="wm-fin">Fin</span><span class="wm-track">Track</span><sup class="wm-reg">&reg;</sup></p>
+            </div>
+        </div>
+    </footer>
+    <!-- Lab 3: the tracker. Plain scripts (not modules) so the page also works when opened
+         straight from the disk (file://), where Chrome blocks ES modules. Order matters. -->
+    <script src="js/model.js" defer></script>
+    <script src="js/categoriser.js" defer></script>
+    <script src="js/insights.js" defer></script>
+    <script src="js/services.js" defer></script>
+    <script src="js/app.js" defer></script>
+    <script src="js/motion.js" defer></script>
+</body>
+</html>

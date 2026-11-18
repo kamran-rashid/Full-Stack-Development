@@ -20,7 +20,14 @@ This repository holds my lab assignments for CSC413-8. Each lab lives in its own
 │   ├── README.md
 │   ├── assets/        images, video, captions
 │   └── evidence/      screenshots and print preview
-└── LAB_3/ ...         added as each new lab is completed
+└── LAB_3/             Lab 3: FinTrack transaction tracker (JavaScript)
+    ├── index.html
+    ├── styles.css
+    ├── js/            model, categoriser, insights, services, app
+    ├── data/          sample bank statements (CSV)
+    ├── README.md
+    ├── AI_Log.docx
+    └── evidence/      screenshots
 ```
 
 ## Labs
@@ -29,6 +36,7 @@ This repository holds my lab assignments for CSC413-8. Each lab lives in its own
 |---|---|---|---|---|
 | 1 | [`LAB_1`](./LAB_1) | FinTrack personal-finance website (first version) | HTML, CSS, JavaScript | [LAB_1/README.md](./LAB_1) |
 | 2 | [`LAB_2`](./LAB_2) | FinTrack: a context-aware media page that adapts to the viewer's screen, input, preferences and printing | HTML and CSS only, with no JavaScript | [LAB_2/README.md](./LAB_2/README.md) |
+| 3 | [`LAB_3`](./LAB_3) | FinTrack tracker: transactions, statement import, budget forecast, pattern detection, live exchange rates | HTML, CSS and plain JavaScript (objects, arrays, Sets, Maps, events, async) | [LAB_3/README.md](./LAB_3/README.md) |
 
 > Add a row to this table for every new lab, and keep the folder names in the form `LAB_<number>`.
 
@@ -42,7 +50,7 @@ Every lab folder is a static website, so no build step or install is needed.
    cd <repository-name>
    ```
 2. Open the lab's `index.html` in Chrome (Chrome is the reference browser for these labs).
-3. For labs with video captions (Lab 2), serve the folder over HTTP instead of double-clicking the file, because Chrome blocks caption (`.vtt`) files on `file://`:
+3. For labs with video captions (Labs 2 and 3), serve the folder over HTTP instead of double-clicking the file, because Chrome blocks caption (`.vtt`) files on `file://`:
    ```bash
    cd LAB_2
    python3 -m http.server 8000

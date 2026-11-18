@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="t d">
+  <title id="t">Portfolio journey, March 2025 to October 2026</title>
+  <desc id="d">A rising but uneven line with four milestones: first SIP, first stock, fixed deposit, two lakh crossed.</desc>
+  <rect width="1200" height="420" fill="#16304f"/>
+  <g stroke="#efe8d8" stroke-opacity=".08" stroke-width="2">
+    <path d="M0 70H1200M0 140H1200M0 210H1200M0 280H1200M0 350H1200"/>
+  </g>
+  <path d="M0 340 L120 315 240 328 360 262 480 280 600 205 720 226 840 150 960 172 1080 92 1200 108 V420 H0Z" fill="#1f8a70" fill-opacity=".38"/>
+  <path d="M0 340 L120 315 240 328 360 262 480 280 600 205 720 226 840 150 960 172 1080 92 1200 108" fill="none" stroke="#d9a21b" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>
+  <g fill="#efe8d8" stroke="#d9a21b" stroke-width="5">
+    <circle cx="240" cy="328" r="11"/><circle cx="600" cy="205" r="11"/><circle cx="840" cy="150" r="11"/><circle cx="1080" cy="92" r="11"/>
+  </g>
+  <g fill="#efe8d8" font-family="'Courier New',monospace" font-size="19" text-anchor="middle">
+    <text x="240" y="372">MAR 2025 · SIP</text>
+    <text x="600" y="250">AUG 2025 · FIRST STOCK</text>
+    <text x="840" y="196">JAN 2026 · FD JOINS</text>
+    <text x="1040" y="64">OCT 2026 · ₹2 LAKH</text>
+  </g>
+  <g fill="#efe8d8" font-family="'Courier New',monospace">
+    <text x="48" y="64" font-size="24" letter-spacing="2">FINTRACK / MARKET JOURNAL</text>
+    <text x="48" y="130" font-size="62" font-family="Georgia,'Times New Roman',serif" font-weight="700">Growth takes time.</text>
+  </g>
+</svg>
