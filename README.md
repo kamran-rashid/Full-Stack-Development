@@ -28,6 +28,12 @@ This repository holds my lab assignments for CSC413-8. Each lab lives in its own
     ├── README.md
     ├── AI_Log.docx
     └── evidence/      screenshots
+Classroom_Tasks/
+└── Classroom_Task_1/  Web APIs: FinTrack Pocket
+    ├── index.html, styles.css, js/
+    ├── tests/         automated test suite + results
+    ├── README.md      documentation and test results
+    └── evidence/      screenshots of the test cases
 ```
 
 ## Labs
@@ -39,6 +45,12 @@ This repository holds my lab assignments for CSC413-8. Each lab lives in its own
 | 3 | [`LAB_3`](./LAB_3) | FinTrack tracker: transactions, statement import, budget forecast, pattern detection, live exchange rates | HTML, CSS and plain JavaScript (objects, arrays, Sets, Maps, events, async) | [LAB_3/README.md](./LAB_3/README.md) |
 
 > Add a row to this table for every new lab, and keep the folder names in the form `LAB_<number>`.
+
+## Classroom tasks
+
+| Task | Folder | Topic | Technology | Details |
+|---|---|---|---|---|
+| 1 | [`Classroom_Tasks/Classroom_Task_1`](./Classroom_Tasks/Classroom_Task_1) | FinTrack Pocket: an expense diary that remembers where you spent, using Local Storage, Session Storage, IndexedDB, Geolocation and Web Workers | HTML, CSS, JavaScript (Web APIs) | [README](./Classroom_Tasks/Classroom_Task_1/README.md) |
 
 ## How to view a lab
 

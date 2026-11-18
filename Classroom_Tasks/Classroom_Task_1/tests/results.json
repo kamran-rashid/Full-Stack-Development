@@ -1,0 +1,267 @@
+[
+ {
+  "test": "Test 1 - Close and reopen the browser (Local Storage + IndexedDB persist, Session Storage does not)",
+  "name": "draft is in Session Storage before closing",
+  "pass": true
+ },
+ {
+  "test": "Test 1 - Close and reopen the browser (Local Storage + IndexedDB persist, Session Storage does not)",
+  "name": "a reload restores the draft (same tab session)",
+  "pass": true
+ },
+ {
+  "test": "Test 1 - Close and reopen the browser (Local Storage + IndexedDB persist, Session Storage does not)",
+  "name": "Local Storage: name remembered (\"Welcome back, Kamran\")",
+  "pass": true
+ },
+ {
+  "test": "Test 1 - Close and reopen the browser (Local Storage + IndexedDB persist, Session Storage does not)",
+  "name": "Local Storage: dark theme and ₹12,000 budget remembered",
+  "pass": true
+ },
+ {
+  "test": "Test 1 - Close and reopen the browser (Local Storage + IndexedDB persist, Session Storage does not)",
+  "name": "Local Storage: visit counter is 2",
+  "pass": true
+ },
+ {
+  "test": "Test 1 - Close and reopen the browser (Local Storage + IndexedDB persist, Session Storage does not)",
+  "name": "IndexedDB: the expense is still there",
+  "pass": true
+ },
+ {
+  "test": "Test 1 - Close and reopen the browser (Local Storage + IndexedDB persist, Session Storage does not)",
+  "name": "IndexedDB: the last analysis is shown again automatically",
+  "pass": true
+ },
+ {
+  "test": "Test 1 - Close and reopen the browser (Local Storage + IndexedDB persist, Session Storage does not)",
+  "name": "Session Storage: the draft and tab session are gone (new session)",
+  "pass": true
+ },
+ {
+  "test": "Test 2 - Two tabs (Session Storage is per tab; Local Storage and IndexedDB are shared)",
+  "name": "different tab ids (0DKQD vs 31SFZ)",
+  "pass": true
+ },
+ {
+  "test": "Test 2 - Two tabs (Session Storage is per tab; Local Storage and IndexedDB are shared)",
+  "name": "each tab keeps its own view",
+  "pass": true
+ },
+ {
+  "test": "Test 2 - Two tabs (Session Storage is per tab; Local Storage and IndexedDB are shared)",
+  "name": "the draft exists only in tab A",
+  "pass": true
+ },
+ {
+  "test": "Test 2 - Two tabs (Session Storage is per tab; Local Storage and IndexedDB are shared)",
+  "name": "activity logs differ (2 vs 1)",
+  "pass": true
+ },
+ {
+  "test": "Test 2 - Two tabs (Session Storage is per tab; Local Storage and IndexedDB are shared)",
+  "name": "IndexedDB is shared: tab B sees the 40 sample expenses",
+  "pass": true
+ },
+ {
+  "test": "Test 2 - Two tabs (Session Storage is per tab; Local Storage and IndexedDB are shared)",
+  "name": "Local Storage \"storage\" event: tab A picks up the new budget from tab B at once",
+  "pass": true
+ },
+ {
+  "test": "Test 3 - IndexedDB: add, retrieve, update, delete",
+  "name": "ADD: record stored (amount in paise, with location)",
+  "pass": true
+ },
+ {
+  "test": "Test 3 - IndexedDB: add, retrieve, update, delete",
+  "name": "UPDATE: same id, new amount and note, updatedAt changed",
+  "pass": true
+ },
+ {
+  "test": "Test 3 - IndexedDB: add, retrieve, update, delete",
+  "name": "RETRIEVE: listed again automatically after reload",
+  "pass": true
+ },
+ {
+  "test": "Test 3 - IndexedDB: add, retrieve, update, delete",
+  "name": "DELETE: record removed from IndexedDB",
+  "pass": true
+ },
+ {
+  "test": "Test 3 - IndexedDB: add, retrieve, update, delete",
+  "name": "UNDO: record put back",
+  "pass": true
+ },
+ {
+  "test": "Test 3 - IndexedDB: add, retrieve, update, delete",
+  "name": "saving a place labels the earlier expense recorded there",
+  "pass": true
+ },
+ {
+  "test": "Test 3 - IndexedDB: add, retrieve, update, delete",
+  "name": "deleting the place unlinks it (found via the byPlace index) but keeps coordinates",
+  "pass": true
+ },
+ {
+  "test": "Test 4 - Location permission denied (and unavailable, timeout, unsupported)",
+  "name": "the expense is still saved, without a location, with an explanation",
+  "pass": true
+ },
+ {
+  "test": "Test 4 - Location permission denied (and unavailable, timeout, unsupported)",
+  "name": "a notice explains what still works",
+  "pass": true
+ },
+ {
+  "test": "Test 4 - Location permission denied (and unavailable, timeout, unsupported)",
+  "name": "the status line shows Geolocation blocked",
+  "pass": true
+ },
+ {
+  "test": "Test 4 - Location permission denied (and unavailable, timeout, unsupported)",
+  "name": "\"Near me\" shows the denied message instead of crashing",
+  "pass": true
+ },
+ {
+  "test": "Test 4 - Location permission denied (and unavailable, timeout, unsupported)",
+  "name": "position unavailable: explained (\"could not find its position\")",
+  "pass": true
+ },
+ {
+  "test": "Test 4 - Location permission denied (and unavailable, timeout, unsupported)",
+  "name": "position timeout: explained (\"took too long\")",
+  "pass": true
+ },
+ {
+  "test": "Test 4 - Location permission denied (and unavailable, timeout, unsupported)",
+  "name": "no Geolocation API at all: explained",
+  "pass": true
+ },
+ {
+  "test": "Test 5 - Large dataset in a Web Worker while the page stays responsive",
+  "name": "worker: the page never froze for more than 100 ms (17 ms)",
+  "pass": true
+ },
+ {
+  "test": "Test 5 - Large dataset in a Web Worker while the page stays responsive",
+  "name": "worker: every tap during the run was handled (12/12)",
+  "pass": true
+ },
+ {
+  "test": "Test 5 - Large dataset in a Web Worker while the page stays responsive",
+  "name": "cancel: the worker is stopped and replaced",
+  "pass": true
+ },
+ {
+  "test": "Test 5 - Large dataset in a Web Worker while the page stays responsive",
+  "name": "main thread comparison: the page froze for 950 ms",
+  "pass": true
+ },
+ {
+  "test": "Error handling - storage unavailable or damaged",
+  "name": "IndexedDB unavailable: notice shown, memory-only mode",
+  "pass": true
+ },
+ {
+  "test": "Error handling - storage unavailable or damaged",
+  "name": "IndexedDB unavailable: expenses can still be added for this tab",
+  "pass": true
+ },
+ {
+  "test": "Error handling - storage unavailable or damaged",
+  "name": "Local and Session Storage blocked: notices shown, app still runs",
+  "pass": true
+ },
+ {
+  "test": "Error handling - storage unavailable or damaged",
+  "name": "damaged settings JSON: defaults used, notice shown",
+  "pass": true
+ },
+ {
+  "test": "Error handling - storage unavailable or damaged",
+  "name": "Local Storage full (QuotaExceededError): explained",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "desktop light: no sideways scroll on near",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "desktop light: no sideways scroll on insights",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "desktop light: no sideways scroll on diary",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "desktop light: axe-core 0 accessibility violations",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "tablet 768: no sideways scroll on near",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "tablet 768: no sideways scroll on insights",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "tablet 768: no sideways scroll on diary",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "tablet 768: axe-core 0 accessibility violations",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "phone 390 dark: no sideways scroll on near",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "phone 390 dark: no sideways scroll on insights",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "phone 390 dark: no sideways scroll on diary",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "phone 390 dark: axe-core 0 accessibility violations",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "320 px: no sideways scroll on near",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "320 px: no sideways scroll on insights",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "320 px: no sideways scroll on diary",
+  "pass": true
+ },
+ {
+  "test": "Responsive layout and accessibility",
+  "name": "320 px: axe-core 0 accessibility violations",
+  "pass": true
+ }
+]

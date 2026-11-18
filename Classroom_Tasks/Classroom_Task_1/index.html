@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="FinTrack Pocket: an expense diary that remembers where your money went. Uses Local Storage, Session Storage, IndexedDB, Geolocation and Web Workers.">
+    <meta name="color-scheme" content="light dark">
+    <title>FinTrack Pocket - where your money went</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b7a5e'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='%23fffdf8' font-family='Georgia'%3E%E2%82%B9%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css">
+    <!-- apply the saved theme before the first paint, so a dark-mode user never sees a white flash -->
+    <script>try { const t = JSON.parse(localStorage.getItem("pocket.prefs.v1"))?.theme; if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}</script>
+</head>
+
+<body>
+    <a class="skip-link" href="#main">Skip to the app</a>
+
+    <header class="bar">
+        <h1 class="brand">
+            <span class="brand-mark" aria-hidden="true">&#8377;</span>
+            <span><strong>FinTrack</strong> Pocket</span>
+        </h1>
+        <p class="greeting" id="greeting" aria-live="polite"></p>
+        <button class="icon-btn" type="button" id="open-settings" aria-haspopup="dialog">
+            <span aria-hidden="true">&#9881;</span> Settings
+        </button>
+    </header>
+
+    <section class="status-region" aria-label="App status">
+        <!-- what each Web API is doing right now: a live, honest status line -->
+        <ul class="api-status" id="api-status" aria-label="Browser features in use"></ul>
+
+        <!-- shown when something is unavailable (storage blocked, database failed, location denied) -->
+        <div class="notices" id="notices" role="status" aria-live="polite"></div>
+    </section>
+
+    <main id="main" class="layout">
+
+        <!-- ===================== LEFT: record + this tab ===================== -->
+        <div class="side">
+            <form class="card entry" id="entry" novalidate aria-labelledby="entry-title">
+                <div class="card-head">
+                    <h2 id="entry-title">Add an expense</h2>
+                    <span class="tag" id="draft-tag" hidden>Draft restored</span>
+                </div>
+
+                <div class="errors" id="entry-errors" role="alert" tabindex="-1" hidden></div>
+
+                <div class="row">
+                    <div class="field">
+                        <label for="amount">Amount (&#8377;)</label>
+                        <input id="amount" name="amount" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 240" aria-describedby="amount-err">
+                        <p class="err" id="amount-err"></p>
+                    </div>
+                    <div class="field">
+                        <label for="category">Category</label>
+                        <select id="category" name="category"></select>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label for="note">What was it?</label>
+                    <input id="note" name="note" type="text" maxlength="60" autocomplete="off" placeholder="e.g. Canteen lunch" aria-describedby="note-err">
+                    <p class="err" id="note-err"></p>
+                </div>
+
+                <div class="row">
+                    <div class="field">
+                        <label for="date">Date</label>
+                        <input id="date" name="date" type="date" aria-describedby="date-err">
+                        <p class="err" id="date-err"></p>
+                    </div>
+                    <div class="field check">
+                        <input id="tag-location" name="tagLocation" type="checkbox">
+                        <label for="tag-location">Tag with my location</label>
+                    </div>
+                </div>
+                <p class="hint" id="location-hint" aria-live="polite"></p>
+
+                <div class="actions">
+                    <button class="btn" type="submit" id="save">Save expense</button>
+                    <button class="btn ghost" type="button" id="cancel-edit" hidden>Cancel edit</button>
+                </div>
+            </form>
+
+            <section class="card session" aria-labelledby="session-title">
+                <div class="card-head">
+                    <h2 id="session-title">This tab</h2>
+                    <span class="tag mono" id="tab-id"></span>
+                </div>
+                <p class="hint" id="session-summary"></p>
+                <ol class="activity" id="activity"></ol>
+                <p class="hint small">Kept in <strong>Session Storage</strong>: it survives a reload, but a new tab starts empty and closing the tab clears it. Your preferences and records are shared by every tab.</p>
+            </section>
+        </div>
+
+        <!-- ===================== RIGHT: diary / near me / insights ===================== -->
+        <div class="main">
+            <div class="tabs" role="tablist" aria-label="Views">
+                <button role="tab" id="tab-diary" aria-controls="view-diary" aria-selected="true" data-view="diary">Diary</button>
+                <button role="tab" id="tab-near" aria-controls="view-near" aria-selected="false" data-view="near" tabindex="-1">Near me</button>
+                <button role="tab" id="tab-insights" aria-controls="view-insights" aria-selected="false" data-view="insights" tabindex="-1">Insights</button>
+            </div>
+
+            <!-- DIARY -->
+            <section class="view" id="view-diary" role="tabpanel" aria-labelledby="tab-diary">
+                <div class="budget card" id="budget"></div>
+
+                <div class="filters">
+                    <div class="field">
+                        <label for="filter-category">Category</label>
+                        <select id="filter-category"></select>
+                    </div>
+                    <div class="field">
+                        <label for="filter-month">Month</label>
+                        <select id="filter-month"></select>
+                    </div>
+                    <p class="count mono" id="diary-count" aria-live="polite"></p>
+                </div>
+
+                <ul class="diary" id="diary"></ul>
+                <div class="empty card" id="diary-empty" hidden>
+                    <p><strong>No expenses yet.</strong> Add one on the left, or load a sample diary to explore.</p>
+                    <button class="btn ghost" type="button" id="load-sample">Load a sample diary (40 entries)</button>
+                </div>
+            </section>
+
+            <!-- NEAR ME -->
+            <section class="view" id="view-near" role="tabpanel" aria-labelledby="tab-near" hidden>
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Spending near me</h2>
+                        <button class="btn" type="button" id="find-near">Use my location</button>
+                    </div>
+                    <p class="hint" id="near-status" aria-live="polite">Shows what you have spent within your chosen radius of where you are now.</p>
+                    <div class="near-grid" id="near-grid" hidden>
+                        <figure class="radar-wrap">
+                            <svg class="radar" id="radar" viewBox="-110 -110 220 220" role="img" aria-labelledby="radar-cap"></svg>
+                            <figcaption id="radar-cap" class="hint small">You are at the centre. Dots are expenses; bigger dots cost more.</figcaption>
+                        </figure>
+                        <div>
+                            <p class="near-total" id="near-total"></p>
+                            <ul class="near-list" id="near-list"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Saved places</h2>
+                    </div>
+                    <p class="hint">Name a spot once and every expense recorded there is labelled with it.</p>
+                    <form class="place-form" id="place-form" novalidate>
+                        <div class="field">
+                            <label for="place-name">Name this spot</label>
+                            <input id="place-name" type="text" maxlength="24" placeholder="e.g. College" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label for="place-radius">Radius</label>
+                            <select id="place-radius">
+                                <option value="100">100 m</option>
+                                <option value="250" selected>250 m</option>
+                                <option value="500">500 m</option>
+                            </select>
+                        </div>
+                        <button class="btn ghost" type="submit">Save where I am</button>
+                    </form>
+                    <ul class="places" id="places"></ul>
+                </div>
+            </section>
+
+            <!-- INSIGHTS -->
+            <section class="view" id="view-insights" role="tabpanel" aria-labelledby="tab-insights" hidden>
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Analyse my diary</h2>
+                        <button class="btn" type="button" id="analyse">Analyse in the background</button>
+                    </div>
+                    <p class="hint" id="analysis-when" aria-live="polite"></p>
+                    <div id="analysis"></div>
+                </div>
+
+                <div class="card stress">
+                    <div class="card-head">
+                        <h2>Large dataset test</h2>
+                    </div>
+                    <p class="hint">Generates a year of synthetic expenses around you and runs the same analysis (totals, median, 90th percentile, distances and k-means hotspots). Watch the heartbeat and try the counter while it runs.</p>
+                    <div class="stress-controls">
+                        <div class="field">
+                            <label for="stress-size">Records</label>
+                            <select id="stress-size">
+                                <option value="100000">100,000</option>
+                                <option value="300000" selected>300,000</option>
+                                <option value="1000000">1,000,000</option>
+                            </select>
+                        </div>
+                        <button class="btn" type="button" id="stress-worker">Run in a Web Worker</button>
+                        <button class="btn ghost" type="button" id="stress-main">Run on the main thread</button>
+                        <button class="btn ghost" type="button" id="stress-cancel" disabled>Cancel</button>
+                    </div>
+
+                    <div class="progress" id="stress-progress" hidden>
+                        <progress id="stress-bar" max="1" value="0" aria-labelledby="stress-phase"></progress>
+                        <span class="hint small" id="stress-phase"></span>
+                    </div>
+
+                    <!-- proves the page is (or is not) responsive while the work runs -->
+                    <div class="pulse">
+                        <div class="heartbeat" aria-hidden="true"><span id="beat-dot"></span></div>
+                        <p class="mono small" id="fps">Heartbeat: waiting</p>
+                        <button class="btn ghost" type="button" id="tap">Tap me: <span id="taps">0</span></button>
+                    </div>
+                    <div id="stress-result" aria-live="polite"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- ===================== SETTINGS (Local Storage) ===================== -->
+    <dialog class="settings" id="settings" aria-labelledby="settings-title">
+        <form method="dialog" id="settings-form" novalidate>
+            <h2 id="settings-title">Settings</h2>
+            <p class="hint small">Saved in <strong>Local Storage</strong>: they stay after the browser is closed and apply in every tab at once.</p>
+
+            <div class="field">
+                <label for="pref-name">Your name</label>
+                <input id="pref-name" type="text" maxlength="30" autocomplete="given-name">
+            </div>
+            <fieldset class="field">
+                <legend>Theme</legend>
+                <div class="seg">
+                    <input type="radio" name="theme" id="theme-system" value="system"><label for="theme-system">System</label>
+                    <input type="radio" name="theme" id="theme-light" value="light"><label for="theme-light">Light</label>
+                    <input type="radio" name="theme" id="theme-dark" value="dark"><label for="theme-dark">Dark</label>
+                </div>
+            </fieldset>
+            <div class="row">
+                <div class="field">
+                    <label for="pref-budget">Monthly budget (&#8377;)</label>
+                    <input id="pref-budget" type="text" inputmode="numeric" aria-describedby="pref-budget-err">
+                    <p class="err" id="pref-budget-err"></p>
+                </div>
+                <div class="field">
+                    <label for="pref-radius">"Near me" radius</label>
+                    <select id="pref-radius">
+                        <option value="0.25">250 m</option>
+                        <option value="0.5">500 m</option>
+                        <option value="1">1 km</option>
+                        <option value="2">2 km</option>
+                        <option value="5">5 km</option>
+                        <option value="10">10 km</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="pref-category">Default category</label>
+                    <select id="pref-category"></select>
+                </div>
+                <div class="field check">
+                    <input id="pref-autotag" type="checkbox">
+                    <label for="pref-autotag">Tag new expenses with my location</label>
+                </div>
+            </div>
+
+            <p class="hint small" id="storage-usage"></p>
+
+            <div class="actions">
+                <button class="btn" type="submit" value="save" id="settings-save">Save settings</button>
+                <button class="btn ghost" type="submit" value="cancel" formnovalidate>Close</button>
+            </div>
+            <div class="danger">
+                <button class="btn danger-btn" type="button" id="wipe">Delete all my data</button>
+                <p class="hint small">Removes every record, place, setting and this tab's session from this browser.</p>
+            </div>
+        </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <noscript><p class="noscript">FinTrack Pocket needs JavaScript.</p></noscript>
+
+    <!-- plain scripts (not modules), so the app also works when index.html is opened straight from the disk -->
+    <script src="js/store.js" defer></script>
+    <script src="js/db.js" defer></script>
+    <script src="js/geo.js" defer></script>
+    <script src="js/worker.js" defer></script>
+    <script src="js/app.js" defer></script>
+</body>
+</html>
